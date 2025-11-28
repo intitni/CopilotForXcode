@@ -281,9 +281,13 @@ extension WidgetWindowsController {
                let focusElement = await xcodeInspector.focusedEditor?.element,
                let parent = focusElement.parent,
                let frame = parent.rect,
-               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-               let windowContainingScreen = NSScreen.screens
-               .first(where: { $0.frame.contains(frame.origin) })
+               let screen = NSScreen.screens.first(
+                   where: { $0.frame.origin == .zero }
+               ) ?? NSScreen.main,
+               let windowContainingScreen = NSScreen.screens.first(where: {
+                   let flippedScreenFrame = $0.frame.flipped(relativeTo: screen.frame)
+                   return flippedScreenFrame.contains(frame.origin)
+               })
             {
                 let positionMode = UserDefaults.shared
                     .value(for: \.suggestionWidgetPositionMode)
@@ -358,7 +362,7 @@ extension WidgetWindowsController {
                             defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
                         )
                     }
-
+ 
                     window = workspaceWindow
                     frame = rect
                 }
@@ -475,6 +479,7 @@ extension WidgetWindowsController {
             )
 
             if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
+                print(suggestionPanelLocation)
                 windows.suggestionPanelWindow.setFrame(
                     suggestionPanelLocation.frame,
                     display: false,
@@ -928,5 +933,23 @@ func widgetLevel(_ addition: Int) -> NSWindow.Level {
     minimumWidgetLevel = NSWindow.Level.floating.rawValue
     #endif
     return .init(minimumWidgetLevel + addition)
+}
+
+extension CGRect {
+    func flipped(relativeTo reference: CGRect) -> CGRect {
+        let flippedOrigin = CGPoint(
+            x: origin.x,
+            y: reference.height - origin.y - height
+        )
+        return CGRect(origin: flippedOrigin, size: size)
+    }
+
+    func relative(to reference: CGRect) -> CGRect {
+        let relativeOrigin = CGPoint(
+            x: origin.x - reference.origin.x,
+            y: origin.y - reference.origin.y
+        )
+        return CGRect(origin: relativeOrigin, size: size)
+    }
 }
 

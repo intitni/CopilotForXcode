@@ -1,6 +1,7 @@
 import AppKit
 import Perception
 import SwiftUI
+import Logger
 
 struct OverlayFrameEnvironmentKey: EnvironmentKey {
     static let defaultValue: CGRect = .zero
@@ -86,18 +87,21 @@ final class OverlayPanel: NSPanel {
     }
 
     func setTopLeftCoordinateFrame(_ frame: CGRect, display: Bool) {
-        let screen = NSScreen.screens
-            .first(where: { $0.frame.intersects(frame) }) ?? NSScreen.main
+        let zeroScreen = NSScreen.screens.first { $0.frame.origin == .zero }
+            ?? NSScreen.primaryScreen ?? NSScreen.main
         let panelFrame = Self.convertAXRectToNSPanelFrame(
             axRect: frame,
-            forScreen: screen
+            forPrimaryScreen: zeroScreen
         )
         panelState.windowFrame = frame
         panelState.windowFrameNSCoordinate = panelFrame
         setFrame(panelFrame, display: display)
     }
 
-    static func convertAXRectToNSPanelFrame(axRect: CGRect, forScreen screen: NSScreen?) -> CGRect {
+    static func convertAXRectToNSPanelFrame(
+        axRect: CGRect,
+        forPrimaryScreen screen: NSScreen?
+    ) -> CGRect {
         guard let screen = screen else { return .zero }
         let screenFrame = screen.frame
         let flippedY = screenFrame.origin.y + screenFrame.size
@@ -137,5 +141,37 @@ func overlayLevel(_ addition: Int) -> NSWindow.Level {
     minimumWidgetLevel = NSWindow.Level.floating.rawValue
     #endif
     return .init(minimumWidgetLevel + addition)
+}
+
+public extension CGRect {
+    func flipped(relativeTo reference: CGRect) -> CGRect {
+        let flippedOrigin = CGPoint(
+            x: origin.x,
+            y: reference.height - origin.y - height
+        )
+        return CGRect(origin: flippedOrigin, size: size)
+    }
+
+    func relative(to reference: CGRect) -> CGRect {
+        let relativeOrigin = CGPoint(
+            x: origin.x - reference.origin.x,
+            y: origin.y - reference.origin.y
+        )
+        return CGRect(origin: relativeOrigin, size: size)
+    }
+}
+
+public extension NSScreen {
+    var isPrimary: Bool {
+        let id = deviceDescription[.init("NSScreenNumber")] as? CGDirectDisplayID
+        return id == CGMainDisplayID()
+    }
+
+    static var primaryScreen: NSScreen? {
+        NSScreen.screens.first {
+            let id = $0.deviceDescription[.init("NSScreenNumber")] as? CGDirectDisplayID
+            return id == CGMainDisplayID()
+        }
+    }
 }
 
