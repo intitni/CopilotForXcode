@@ -281,7 +281,9 @@ extension WidgetWindowsController {
                let focusElement = await xcodeInspector.focusedEditor?.element,
                let parent = focusElement.parent,
                let frame = parent.rect,
-               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+               let screen = NSScreen.screens.first(
+                   where: { $0.frame.origin == .zero }
+               ) ?? NSScreen.main,
                let windowContainingScreen = NSScreen.screens.first(where: {
                    let flippedScreenFrame = $0.frame.flipped(relativeTo: screen.frame)
                    return flippedScreenFrame.contains(frame.origin)
@@ -941,7 +943,7 @@ extension CGRect {
         )
         return CGRect(origin: flippedOrigin, size: size)
     }
-    
+
     func relative(to reference: CGRect) -> CGRect {
         let relativeOrigin = CGPoint(
             x: origin.x - reference.origin.x,
@@ -950,3 +952,4 @@ extension CGRect {
         return CGRect(origin: relativeOrigin, size: size)
     }
 }
+
