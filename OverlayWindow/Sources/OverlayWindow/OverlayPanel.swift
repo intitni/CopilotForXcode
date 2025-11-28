@@ -1,6 +1,7 @@
 import AppKit
 import Perception
 import SwiftUI
+import Logger
 
 struct OverlayFrameEnvironmentKey: EnvironmentKey {
     static let defaultValue: CGRect = .zero
@@ -86,7 +87,7 @@ final class OverlayPanel: NSPanel {
     }
 
     func setTopLeftCoordinateFrame(_ frame: CGRect, display: Bool) {
-        let zeroScreen = NSScreen.screens.first { $0.frame == .zero }
+        let zeroScreen = NSScreen.screens.first { $0.frame.origin == .zero }
             ?? NSScreen.primaryScreen ?? NSScreen.main
         let panelFrame = Self.convertAXRectToNSPanelFrame(
             axRect: frame,
@@ -97,7 +98,10 @@ final class OverlayPanel: NSPanel {
         setFrame(panelFrame, display: display)
     }
 
-    static func convertAXRectToNSPanelFrame(axRect: CGRect, forPrimaryScreen screen: NSScreen?) -> CGRect {
+    static func convertAXRectToNSPanelFrame(
+        axRect: CGRect,
+        forPrimaryScreen screen: NSScreen?
+    ) -> CGRect {
         guard let screen = screen else { return .zero }
         let screenFrame = screen.frame
         let flippedY = screenFrame.origin.y + screenFrame.size
