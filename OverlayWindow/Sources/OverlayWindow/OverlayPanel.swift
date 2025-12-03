@@ -33,6 +33,7 @@ final class OverlayPanel: NSPanel {
     }
 
     let panelState: PanelState = .init()
+    private var _canBecomeKey = true
 
     init<Content: View>(
         contentRect: NSRect,
@@ -71,11 +72,17 @@ final class OverlayPanel: NSPanel {
     }
 
     override var canBecomeKey: Bool {
-        return true
+        return _canBecomeKey
     }
 
     override var canBecomeMain: Bool {
         return false
+    }
+    
+    override func setIsVisible(_ visible: Bool) {
+        _canBecomeKey = false
+        defer { _canBecomeKey = true }
+        super.setIsVisible(visible)
     }
 
     func moveToActiveSpace() {
