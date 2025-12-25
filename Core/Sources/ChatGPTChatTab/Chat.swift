@@ -1,3 +1,4 @@
+import AppKit
 import ChatBasic
 import ChatService
 import ComposableArchitecture
@@ -124,8 +125,6 @@ struct Chat {
         case sendMessage(UUID)
     }
 
-    @Dependency(\.openURL) var openURL
-
     var body: some ReducerOf<Self> {
         BindingReducer()
 
@@ -214,7 +213,7 @@ struct Chat {
                             print(error)
                         }
                     } else if let url = URL(string: reference.uri), url.scheme != nil {
-                        await openURL(url)
+                        NSWorkspace.shared.open(url)
                     }
                 }
 
