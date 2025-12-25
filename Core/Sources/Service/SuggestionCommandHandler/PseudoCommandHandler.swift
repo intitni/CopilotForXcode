@@ -486,8 +486,7 @@ struct PseudoCommandHandler: CommandHandler {
                 #endif
             } else {
                 Task {
-                    @Dependency(\.openURL) var openURL
-                    await openURL(url)
+                    NSWorkspace.shared.open(url)
                 }
             }
         case let .builtinExtension(extensionIdentifier, id, _):
