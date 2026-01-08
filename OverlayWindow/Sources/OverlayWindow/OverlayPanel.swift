@@ -52,9 +52,9 @@ final class OverlayPanel: NSPanel {
 
         isReleasedWhenClosed = false
         menu = nil
-        isOpaque = false
+        isOpaque = true
         backgroundColor = .clear
-        hasShadow = true
+        hasShadow = false
         alphaValue = 1.0
         collectionBehavior = [.fullScreenAuxiliary]
         isFloatingPanel = true
