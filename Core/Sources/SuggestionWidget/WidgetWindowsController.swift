@@ -479,7 +479,6 @@ extension WidgetWindowsController {
             )
 
             if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
-                print(suggestionPanelLocation)
                 windows.suggestionPanelWindow.setFrame(
                     suggestionPanelLocation.frame,
                     display: false,
@@ -705,7 +704,7 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = false
+        it.isOpaque = true
         it.backgroundColor = .clear
         it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         it.hasShadow = false
@@ -723,10 +722,10 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = false
+        it.isOpaque = true
         it.backgroundColor = .clear
         it.level = widgetLevel(0)
-        it.hasShadow = true
+        it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 store: store.scope(
@@ -749,11 +748,11 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = false
+        it.isOpaque = true
         it.backgroundColor = .clear
         it.level = widgetLevel(2)
         it.hoveringLevel = widgetLevel(2)
-        it.hasShadow = true
+        it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: SharedPanelView(
                 store: store.scope(
@@ -783,10 +782,12 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = false
+        it.isOpaque = true
         it.backgroundColor = .clear
         it.level = widgetLevel(2)
-        it.hasShadow = true
+        it.hasShadow = false
+        it.menu = nil
+        it.animationBehavior = .utilityWindow
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(
                 store: store.scope(
@@ -881,6 +882,8 @@ class WidgetWindow: CanBecomeKeyWindow {
     }
 
     var hoveringLevel: NSWindow.Level = widgetLevel(0)
+    
+    override var isFloatingPanel: Bool { true }
 
     var defaultCollectionBehavior: NSWindow.CollectionBehavior {
         [.fullScreenAuxiliary, .transient]

@@ -1,7 +1,7 @@
 import AppKit
+import Logger
 import Perception
 import SwiftUI
-import Logger
 
 struct OverlayFrameEnvironmentKey: EnvironmentKey {
     static let defaultValue: CGRect = .zero
@@ -24,7 +24,7 @@ public extension EnvironmentValues {
 }
 
 @MainActor
-final class OverlayPanel: NSPanel {
+public final class OverlayPanel: NSPanel {
     @MainActor
     @Perceptible
     final class PanelState {
@@ -35,7 +35,7 @@ final class OverlayPanel: NSPanel {
     let panelState: PanelState = .init()
     private var _canBecomeKey = true
 
-    init<Content: View>(
+    public init<Content: View>(
         contentRect: NSRect,
         @ViewBuilder content: @escaping () -> Content
     ) {
@@ -52,9 +52,9 @@ final class OverlayPanel: NSPanel {
 
         isReleasedWhenClosed = false
         menu = nil
-        isOpaque = false
+        isOpaque = true
         backgroundColor = .clear
-        hasShadow = true
+        hasShadow = false
         alphaValue = 1.0
         collectionBehavior = [.fullScreenAuxiliary]
         isFloatingPanel = true
@@ -71,21 +71,21 @@ final class OverlayPanel: NSPanel {
         )
     }
 
-    override var canBecomeKey: Bool {
+    override public var canBecomeKey: Bool {
         return _canBecomeKey
     }
 
-    override var canBecomeMain: Bool {
+    override public var canBecomeMain: Bool {
         return false
     }
-    
-    override func setIsVisible(_ visible: Bool) {
+
+    override public func setIsVisible(_ visible: Bool) {
         _canBecomeKey = false
         defer { _canBecomeKey = true }
         super.setIsVisible(visible)
     }
 
-    func moveToActiveSpace() {
+    public func moveToActiveSpace() {
         collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
         Task { @MainActor in
             try await Task.sleep(nanoseconds: 50_000_000)

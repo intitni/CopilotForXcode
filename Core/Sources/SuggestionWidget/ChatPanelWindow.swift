@@ -51,10 +51,7 @@ final class ChatPanelWindow: WidgetWindow {
         }())
         titlebarAppearsTransparent = true
         isReleasedWhenClosed = false
-        isOpaque = false
-        backgroundColor = .clear
         level = widgetLevel(1)
-
         hasShadow = true
         contentView = NSHostingView(
             rootView: ChatWindowView(
