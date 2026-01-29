@@ -27,6 +27,7 @@ public enum ChatGPTFunctionResultUserReadableContent: Sendable {
     
     case text(String)
     case list([ListItem])
+    case searchResult([ListItem], queries: [String])
 }
 
 public protocol ChatGPTFunctionResult {
