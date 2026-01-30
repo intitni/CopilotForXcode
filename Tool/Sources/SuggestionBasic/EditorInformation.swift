@@ -23,6 +23,7 @@ public struct EditorInformation: Sendable {
         public var lineAnnotations: [LineAnnotation]
 
         public var selectedContent: String {
+            guard !lines.isEmpty else { return "" }
             if let range = selections.first {
                 if range.isEmpty { return "" }
                 let startIndex = min(
