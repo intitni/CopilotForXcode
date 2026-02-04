@@ -380,14 +380,14 @@ public extension AXUIElement {
         _ = _traverse(element: self, level: 0, info: info, handle: handle)
 
         #if DEBUG
-        let duration = Date().timeIntervalSince(startDate)
-            .formatted(.number.precision(.fractionLength(0...4)))
-        Logger.service.debug(
-            "AXUIElement.traverse count: \(count), took \(duration) seconds",
-            file: file,
-            line: line,
-            function: function
-        )
+//        let duration = Date().timeIntervalSince(startDate)
+//            .formatted(.number.precision(.fractionLength(0...4)))
+//        Logger.service.debug(
+//            "AXUIElement.traverse count: \(count), took \(duration) seconds",
+//            file: file,
+//            line: line,
+//            function: function
+//        )
         #endif
     }
 
