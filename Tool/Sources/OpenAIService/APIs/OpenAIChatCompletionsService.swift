@@ -797,7 +797,6 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
     }
 
     static func setupGitHubCopilotVisionField(_ request: inout URLRequest, model: ChatModel) {
-        guard model.format == .gitHubCopilot else { return }
         if model.info.supportsImage {
             request.setValue("true", forHTTPHeaderField: "copilot-vision-request")
         }
