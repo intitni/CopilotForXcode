@@ -33,17 +33,20 @@ public struct ChatAgentRequest {
     public var history: [ChatMessage]
     public var references: [ChatMessage.Reference]
     public var topics: [ChatMessage.Reference]
+    public var agentInstructions: String? = nil
 
     public init(
         text: String,
         history: [ChatMessage],
         references: [ChatMessage.Reference],
-        topics: [ChatMessage.Reference]
+        topics: [ChatMessage.Reference],
+        agentInstructions: String? = nil
     ) {
         self.text = text
         self.history = history
         self.references = references
         self.topics = topics
+        self.agentInstructions = agentInstructions
     }
 }
 
