@@ -9,6 +9,13 @@ public protocol TerminalType {
         environment: [String: String]
     ) -> AsyncThrowingStream<String, Error>
 
+    func streamLineForCommand(
+        _ command: String,
+        arguments: [String],
+        currentDirectoryURL: URL?,
+        environment: [String: String]
+    ) -> AsyncThrowingStream<String, Error>
+
     func runCommand(
         _ command: String,
         arguments: [String],
@@ -131,6 +138,46 @@ public final class Terminal: TerminalType, @unchecked Sendable {
         }
 
         return contentStream
+    }
+
+    public func streamLineForCommand(
+        _ command: String = "/bin/bash",
+        arguments: [String],
+        currentDirectoryURL: URL? = nil,
+        environment: [String: String]
+    ) -> AsyncThrowingStream<String, Error> {
+        let chunkStream = streamCommand(
+            command,
+            arguments: arguments,
+            currentDirectoryURL: currentDirectoryURL,
+            environment: environment
+        )
+
+        return AsyncThrowingStream<String, Error> { continuation in
+            Task {
+                var buffer = ""
+                do {
+                    for try await chunk in chunkStream {
+                        buffer.append(chunk)
+
+                        while let range = buffer.range(of: "\n") {
+                            let line = String(buffer[..<range.lowerBound])
+                            buffer.removeSubrange(buffer.startIndex...range.upperBound)
+                            continuation.yield(line)
+                        }
+                    }
+
+                    let trailing = buffer.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trailing.isEmpty {
+                        continuation.yield(trailing)
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
     }
 
     public func runCommand(
