@@ -500,7 +500,6 @@ public extension AXUIElement {
         if description == "editor area" { return self }
         var area: AXUIElement?
         traverse { element, level in
-            print(element.description)
             if level > 10 {
                 return .skipDescendants
             }
