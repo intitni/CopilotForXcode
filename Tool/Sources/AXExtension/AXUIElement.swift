@@ -345,7 +345,7 @@ public extension AXUIElement {
     ) {
         #if DEBUG
         var count = 0
-        let startDate = Date()
+//        let startDate = Date()
         #endif
         func _traverse(
             element: AXUIElement,
