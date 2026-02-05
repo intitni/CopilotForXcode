@@ -35,6 +35,7 @@ class ChatGPTServiceTests: XCTestCase {
             .partialText(" "),
             .partialText("world"),
             .partialText("!"),
+            .usage(promptTokens: 0, completionTokens: 0, cachedTokens: 0, otherUsage: [:]),
         ])
 
         let history = await memory.history
@@ -86,6 +87,7 @@ class ChatGPTServiceTests: XCTestCase {
 
         let response = try await stream.asArray()
         XCTAssertEqual(response, [
+            .usage(promptTokens: 0, completionTokens: 0, cachedTokens: 0, otherUsage: [:]),
             .toolCalls([
                 .init(
                     id: "1",
@@ -179,6 +181,7 @@ class ChatGPTServiceTests: XCTestCase {
             .status(["start bar 1", "start foo 3"]),
             .status(["start bar 2", "start foo 3"]),
             .status(["start bar 3", "start foo 3"]),
+            .usage(promptTokens: 0, completionTokens: 0, cachedTokens: 0, otherUsage: [:]),
             .status(["foo hi"]),
             .status([]),
             .status(["bar bye"]),
@@ -187,6 +190,7 @@ class ChatGPTServiceTests: XCTestCase {
             .partialText(" "),
             .partialText("world"),
             .partialText("!"),
+            .usage(promptTokens: 0, completionTokens: 0, cachedTokens: 0, otherUsage: [:]),
         ])
 
         let history = await memory.history
@@ -272,10 +276,12 @@ class ChatGPTServiceTests: XCTestCase {
 
         let response = try await stream.asArray()
         XCTAssertEqual(response, [
+            .usage(promptTokens: 0, completionTokens: 0, cachedTokens: 0, otherUsage: [:]),
             .partialText("hello"),
             .partialText(" "),
             .partialText("world"),
             .partialText("!"),
+            .usage(promptTokens: 0, completionTokens: 0, cachedTokens: 0, otherUsage: [:]),
         ])
 
         let history = await memory.history
@@ -306,7 +312,7 @@ class ChatGPTServiceTests: XCTestCase {
             ),
         ])
     }
-    
+
     func test_send_memory_and_handles_error() async throws {
         struct E: Error, LocalizedError {
             var errorDescription: String? { "error happens" }
@@ -314,7 +320,7 @@ class ChatGPTServiceTests: XCTestCase {
         let api = ChunksChatCompletionsStreamAPI(chunks: [
             .token("hello"),
             .token(" "),
-            .failure(E())
+            .failure(E()),
         ])
         let builder = APIBuilder(api: api)
         let memory = EmptyChatGPTMemory()
@@ -357,12 +363,12 @@ class ChatGPTServiceTests: XCTestCase {
             ),
         ])
     }
-    
+
     func test_send_memory_and_handles_cancellation() async throws {
         let api = ChunksChatCompletionsStreamAPI(chunks: [
             .token("hello"),
             .token(" "),
-            .failure(CancellationError())
+            .failure(CancellationError()),
         ])
         let builder = APIBuilder(api: api)
         let memory = EmptyChatGPTMemory()
@@ -517,6 +523,7 @@ private struct FunctionProvider: ChatGPTFunctionProvider {
         }
 
         struct Result: ChatGPTFunctionResult {
+            var userReadableContent: ChatBasic.ChatGPTFunctionResultUserReadableContent = .text("")
             var result: String
             var botReadableContent: String { result }
         }
@@ -548,6 +555,8 @@ private struct FunctionProvider: ChatGPTFunctionProvider {
         }
 
         struct Result: ChatGPTFunctionResult {
+            var userReadableContent: ChatBasic.ChatGPTFunctionResultUserReadableContent = .text("")
+
             var result: String
             var botReadableContent: String { result }
         }

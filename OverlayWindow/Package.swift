@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "OverlayWindow",
-    platforms: [.macOS(.v12)],
+    platforms: [.macOS(.v13)],
     products: [
         .library(
             name: "OverlayWindow",
@@ -25,15 +25,15 @@ let package = Package(
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
+                .product(name: "DebounceFunction", package: "Tool"),
                 .product(name: "Perception", package: "swift-perception"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
             ]
         ),
         .testTarget(
             name: "OverlayWindowTests",
-            dependencies: ["OverlayWindow"]
+            dependencies: ["OverlayWindow", .product(name: "DebounceFunction", package: "Tool")]
         ),
     ]
 )
-
 

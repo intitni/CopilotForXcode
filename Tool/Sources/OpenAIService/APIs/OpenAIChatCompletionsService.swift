@@ -74,10 +74,12 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         case assistant
         case function
         case tool
+        case developer
 
         var formalized: ChatCompletionsRequestBody.Message.Role {
             switch self {
             case .system: return .system
+            case .developer: return .system
             case .user: return .user
             case .assistant: return .assistant
             case .function: return .tool
@@ -271,10 +273,10 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
 
     public struct RequestBody: Codable, Equatable {
         public typealias ClaudeCacheControl = ClaudeChatCompletionsService.RequestBody.CacheControl
-        
+
         public struct GitHubCopilotCacheControl: Codable, Equatable, Sendable {
             public var type: String
-            
+
             public init(type: String = "ephemeral") {
                 self.type = type
             }
@@ -430,6 +432,14 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
                     do {
                         let text = try container.decode(String.self)
                         self = .text(text)
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+
+                    do { // Null
+                        _ = try container.decode([ContentPart]?.self)
+                        self = .contentParts([])
                         return
                     } catch {
                         errors.append(error)
@@ -785,9 +795,8 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             }
         }
     }
-    
+
     static func setupGitHubCopilotVisionField(_ request: inout URLRequest, model: ChatModel) {
-        guard model.format == .gitHubCopilot else { return }
         if model.info.supportsImage {
             request.setValue("true", forHTTPHeaderField: "copilot-vision-request")
         }
@@ -1001,7 +1010,7 @@ extension OpenAIChatCompletionsService.RequestBody {
     ) {
         if supportsMultipartMessageContent {
             switch message.role {
-            case .system, .assistant, .user:
+            case .system, .developer, .assistant, .user:
                 let newParts = Self.convertContentPart(
                     content: content,
                     images: images,
@@ -1021,7 +1030,7 @@ extension OpenAIChatCompletionsService.RequestBody {
             }
         } else {
             switch message.role {
-            case .system, .assistant, .user:
+            case .system, .developer, .assistant, .user:
                 if case let .text(existingText) = message.content {
                     message.content = .text(existingText + "\n\n" + content)
                 } else {

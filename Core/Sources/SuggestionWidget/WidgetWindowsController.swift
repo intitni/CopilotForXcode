@@ -704,7 +704,6 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = true
         it.backgroundColor = .clear
         it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         it.hasShadow = false
@@ -722,7 +721,6 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = true
         it.backgroundColor = .clear
         it.level = widgetLevel(0)
         it.hasShadow = false
@@ -748,7 +746,6 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = true
         it.backgroundColor = .clear
         it.level = widgetLevel(2)
         it.hoveringLevel = widgetLevel(2)
@@ -782,7 +779,6 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = true
         it.backgroundColor = .clear
         it.level = widgetLevel(2)
         it.hasShadow = false

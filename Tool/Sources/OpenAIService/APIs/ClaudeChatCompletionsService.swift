@@ -7,6 +7,7 @@ import JoinJSON
 import Logger
 import Preferences
 
+#warning("Update the definitions")
 /// https://docs.anthropic.com/claude/reference/messages_post
 public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
     /// https://docs.anthropic.com/en/docs/about-claude/models
@@ -44,7 +45,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         }
     }
 
-    enum MessageRole: String, Codable {
+    public enum MessageRole: String, Codable {
         case user
         case assistant
 
@@ -127,7 +128,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         var stop_sequence: String?
     }
 
-    public struct RequestBody: Encodable, Equatable {
+    public struct RequestBody: Codable, Equatable {
         public struct CacheControl: Codable, Equatable, Sendable {
             public enum CacheControlType: String, Codable, Equatable, Sendable {
                 case ephemeral
@@ -136,33 +137,33 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             public var type: CacheControlType = .ephemeral
         }
 
-        struct MessageContent: Encodable, Equatable {
-            enum MessageContentType: String, Encodable, Equatable {
+        public struct MessageContent: Codable, Equatable {
+            public enum MessageContentType: String, Codable, Equatable {
                 case text
                 case image
             }
 
-            struct ImageSource: Encodable, Equatable {
-                var type: String = "base64"
+            public struct ImageSource: Codable, Equatable {
+                public var type: String = "base64"
                 /// currently support the base64 source type for images,
                 /// and the image/jpeg, image/png, image/gif, and image/webp media types.
-                var media_type: String = "image/jpeg"
-                var data: String
+                public var media_type: String = "image/jpeg"
+                public var data: String
             }
 
-            var type: MessageContentType
-            var text: String?
-            var source: ImageSource?
-            var cache_control: CacheControl?
+            public var type: MessageContentType
+            public var text: String?
+            public var source: ImageSource?
+            public var cache_control: CacheControl?
         }
 
-        struct Message: Encodable, Equatable {
+        public struct Message: Codable, Equatable {
             /// The role of the message.
-            var role: MessageRole
+            public var role: MessageRole
             /// The content of the message.
-            var content: [MessageContent]
+            public var content: [MessageContent]
 
-            mutating func appendText(_ text: String) {
+            public mutating func appendText(_ text: String) {
                 var otherContents = [MessageContent]()
                 var existedText = ""
                 for existed in content {
@@ -182,26 +183,26 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             }
         }
 
-        struct SystemPrompt: Encodable, Equatable {
-            let type = "text"
-            var text: String
-            var cache_control: CacheControl?
+        public struct SystemPrompt: Codable, Equatable {
+            public var type = "text"
+            public var text: String
+            public var cache_control: CacheControl?
         }
 
-        struct Tool: Encodable, Equatable {
-            var name: String
-            var description: String
-            var input_schema: JSONSchemaValue
+        public struct Tool: Codable, Equatable {
+            public var name: String
+            public var description: String
+            public var input_schema: JSONSchemaValue
         }
 
-        var model: String
-        var system: [SystemPrompt]
-        var messages: [Message]
-        var temperature: Double?
-        var stream: Bool?
-        var stop_sequences: [String]?
-        var max_tokens: Int
-        var tools: [RequestBody.Tool]?
+        public var model: String
+        public var system: [SystemPrompt]
+        public var messages: [Message]
+        public var temperature: Double?
+        public var stream: Bool?
+        public var stop_sequences: [String]?
+        public var max_tokens: Int
+        public var tools: [RequestBody.Tool]?
     }
 
     var apiKey: String
@@ -520,6 +521,54 @@ extension ClaudeChatCompletionsService.RequestBody {
         stream = body.stream
         stop_sequences = body.stop
         max_tokens = body.maxTokens ?? 4000
+    }
+
+    func formalized() -> ChatCompletionsRequestBody {
+        return .init(
+            model: model,
+            messages: system.map { system in
+                let convertedMessage = ChatCompletionsRequestBody.Message(
+                    role: .system,
+                    content: system.text,
+                    cacheIfPossible: system.cache_control != nil
+                )
+                return convertedMessage
+            } + messages.map { message in
+                var convertedMessage = ChatCompletionsRequestBody.Message(
+                    role: message.role == .user ? .user : .assistant,
+                    content: "",
+                    cacheIfPossible: message.content.contains(where: { $0.cache_control != nil })
+                )
+                for messageContent in message.content {
+                    switch messageContent.type {
+                    case .text:
+                        if let text = messageContent.text {
+                            convertedMessage.content += text
+                        }
+                    case .image:
+                        if let source = messageContent.source {
+                            convertedMessage.images.append(
+                                .init(
+                                    base64EncodeData: source.data,
+                                    format: {
+                                        switch source.media_type {
+                                        case "image/png": return .png
+                                        case "image/gif": return .gif
+                                        default: return .jpeg
+                                        }
+                                    }()
+                                )
+                            )
+                        }
+                    }
+                }
+                return convertedMessage
+            },
+            temperature: temperature,
+            stream: stream,
+            stop: stop_sequences,
+            maxTokens: max_tokens
+        )
     }
 }
 

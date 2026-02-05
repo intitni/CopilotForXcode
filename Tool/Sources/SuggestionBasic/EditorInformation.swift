@@ -105,8 +105,12 @@ public struct EditorInformation: Sendable {
         inside range: CursorRange,
         ignoreColumns: Bool = false
     ) -> (code: String, lines: [String]) {
+        if range.start == range.end {
+            // Empty selection (cursor only): return empty code but include the containing line
+            return ("", lines(in: code, containing: range))
+        }
         guard range.start < range.end else { return ("", []) }
-        
+
         let rangeLines = lines(in: code, containing: range)
         if ignoreColumns {
             return (rangeLines.joined(), rangeLines)

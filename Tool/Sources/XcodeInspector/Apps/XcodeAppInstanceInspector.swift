@@ -391,6 +391,22 @@ extension XcodeAppInstanceInspector {
         let workspaces = Self.updateWorkspace(workspaces, with: workspaceInfoInVisibleSpace)
         self.workspaces = workspaces
     }
+    
+    public func workspaceWindow(
+        forWorkspaceURL url: URL
+    ) -> AXUIElement? {
+        let windows = appElement.windows.filter { $0.identifier == "Xcode.WorkspaceWindow" }
+
+        for window in windows {
+            if let workspaceURL = WorkspaceXcodeWindowInspector
+                .extractWorkspaceURL(windowElement: window),
+                workspaceURL == url
+            {
+                return window
+            }
+        }
+        return nil
+    }
 
     /// Use the project path as the workspace identifier.
     nonisolated static func workspaceIdentifier(_ window: AXUIElement) -> WorkspaceIdentifier {
@@ -482,7 +498,7 @@ private func isCompletionPanel(_ element: AXUIElement) -> Bool {
 public extension AXUIElement {
     var editorArea: AXUIElement? {
         if description == "editor area" { return self }
-        var area: AXUIElement? = nil
+        var area: AXUIElement?
         traverse { element, level in
             if level > 10 {
                 return .skipDescendants
@@ -492,14 +508,14 @@ public extension AXUIElement {
                 return .stopSearching
             }
             if element.description == "navigator" {
-                return .skipDescendantsAndSiblings
+                return .skipDescendants
             }
-            
+
             return .continueSearching(())
         }
         return area
     }
-    
+
     var tabBars: [AXUIElement] {
         guard let editorArea else { return [] }
 

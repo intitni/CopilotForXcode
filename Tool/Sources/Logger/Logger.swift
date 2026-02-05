@@ -53,7 +53,11 @@ public final class Logger {
             osLogType = .error
         }
 
+        #if DEBUG
+        os_log("%{public}@", log: osLog, type: osLogType, "\(file):\(line) \(function)\n\n\(message)" as CVarArg)
+        #else
         os_log("%{public}@", log: osLog, type: osLogType, message as CVarArg)
+        #endif
     }
 
     public func debug(

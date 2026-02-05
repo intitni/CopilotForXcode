@@ -58,6 +58,10 @@ extension TokenEncoder {
             }
             return await group.reduce(0, +)
         })
+        for image in message.images {
+            encodingContent.append(image.urlString)
+            total += Int(Double(image.urlString.count) * 1.1)
+        }
         return total
     }
 
