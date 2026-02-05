@@ -162,7 +162,7 @@ public final class Terminal: TerminalType, @unchecked Sendable {
 
                         while let range = buffer.range(of: "\n") {
                             let line = String(buffer[..<range.lowerBound])
-                            buffer.removeSubrange(buffer.startIndex...range.upperBound)
+                            buffer.removeSubrange(buffer.startIndex..<range.upperBound)
                             continuation.yield(line)
                         }
                     }
