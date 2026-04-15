@@ -1,17 +1,17 @@
 import ActiveApplicationMonitor
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Preferences
 import SuggestionBasic
 import SwiftUI
 
 @Reducer
-public struct CircularWidget {
-    public struct IsProcessingCounter: Equatable {
+public struct CircularWidget: Sendable {
+    public struct IsProcessingCounter: Equatable, Sendable {
         var expirationDate: TimeInterval
     }
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State: Equatable, Sendable {
         var isProcessingCounters = [IsProcessingCounter]()
         var isProcessing: Bool
         var isDisplayingContent: Bool

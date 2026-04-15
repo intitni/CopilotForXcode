@@ -4,7 +4,7 @@ import AppKit
 import BuiltinExtension
 import ChatGPTChatTab
 import ChatTab
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Dependencies
 import Logger
 import Preferences

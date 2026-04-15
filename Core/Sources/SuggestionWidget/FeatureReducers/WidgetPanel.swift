@@ -1,11 +1,11 @@
 import AppKit
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Foundation
 
 @Reducer
-public struct WidgetPanel {
+public struct WidgetPanel: Sendable {
     @ObservableState
-    public struct State {
+    public struct State: Sendable {
         public var content: SharedPanel.Content {
             get { sharedPanelState.content }
             set {

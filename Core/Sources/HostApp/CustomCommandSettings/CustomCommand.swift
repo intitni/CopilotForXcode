@@ -1,4 +1,4 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Foundation
 import PlusFeatureFlag
 import Preferences
@@ -6,9 +6,9 @@ import SwiftUI
 import Toast
 
 @Reducer
-struct CustomCommandFeature {
+struct CustomCommandFeature: Sendable {
     @ObservableState
-    struct State: Equatable {
+    struct State: Equatable, Sendable {
         var editCustomCommand: EditCustomCommand.State?
     }
 

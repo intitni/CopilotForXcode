@@ -1,4 +1,4 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Dependencies
 import Foundation
 import SwiftUI

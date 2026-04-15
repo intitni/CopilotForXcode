@@ -1,5 +1,5 @@
 import Client
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import KeyboardShortcuts
 import LaunchAgentManager
 import Preferences

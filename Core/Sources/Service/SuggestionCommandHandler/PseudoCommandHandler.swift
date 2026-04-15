@@ -3,7 +3,7 @@ import AppKit
 import BuiltinExtension
 import CodeiumService
 import CommandHandler
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import enum CopilotForXcodeKit.SuggestionServiceError
 import Dependencies
 import Logger

@@ -1,6 +1,6 @@
 import Foundation
 import SwiftUI
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 
 @Reducer
 struct APIKeySelection {

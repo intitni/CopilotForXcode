@@ -1,7 +1,7 @@
 import AppKit
 import ChatBasic
 import ChatService
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Foundation
 import MarkdownUI
 import OpenAIService

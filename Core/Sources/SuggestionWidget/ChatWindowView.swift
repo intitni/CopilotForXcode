@@ -2,7 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import ChatGPTChatTab
 import ChatTab
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import SwiftUI
 import SharedUIComponents
 

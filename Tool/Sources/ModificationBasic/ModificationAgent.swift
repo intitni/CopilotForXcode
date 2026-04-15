@@ -1,5 +1,5 @@
 import ChatBasic
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Foundation
 import SuggestionBasic
 

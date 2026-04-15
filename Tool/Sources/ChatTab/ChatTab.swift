@@ -1,11 +1,11 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Preferences
 import Foundation
 import SwiftUI
 
 /// The information of a tab.
 @ObservableState
-public struct ChatTabInfo: Identifiable, Equatable {
+public struct ChatTabInfo: Identifiable, Equatable, Sendable {
     public var id: String
     public var title: String
     public var focusTrigger: Int = 0

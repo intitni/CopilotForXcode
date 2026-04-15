@@ -1,6 +1,6 @@
 import AppKit
 import ChatService
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import CustomCommandTemplateProcessor
 import Foundation
 import GitHubCopilotService
@@ -471,7 +471,7 @@ extension WindowBaseCommandHandler {
 
         _ = await MainActor.run {
             store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
-                promptToCodeState: Shared(.init(
+                promptToCodeState: Shared(value: .init(
                     source: .init(
                         language: codeLanguage,
                         documentURL: fileURL,

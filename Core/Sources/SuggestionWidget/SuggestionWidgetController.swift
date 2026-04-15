@@ -3,7 +3,7 @@ import AppKit
 import AsyncAlgorithms
 import ChatTab
 import Combine
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Preferences
 import SwiftUI
 import UserDefaultsObserver

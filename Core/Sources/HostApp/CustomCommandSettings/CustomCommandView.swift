@@ -1,4 +1,4 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import MarkdownUI
 import PlusFeatureFlag
 import Preferences
@@ -25,7 +25,7 @@ let customCommandStore = StoreOf<CustomCommandFeature>(
 )
 
 struct CustomCommandView: View {
-    final class Settings: ObservableObject {
+    final class Settings: ObservableObject, @unchecked Sendable {
         @AppStorage(\.customCommands) var customCommands
 
         init(customCommands: AppStorage<[CustomCommand]>? = nil) {

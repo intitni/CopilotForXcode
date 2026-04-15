@@ -1,7 +1,7 @@
 import ActiveApplicationMonitor
 import AppActivator
 import AsyncAlgorithms
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Foundation
 import Logger
 import Preferences
@@ -10,19 +10,19 @@ import Toast
 import XcodeInspector
 
 @Reducer
-public struct Widget {
-    public struct WindowState: Equatable {
+public struct Widget: Sendable {
+    public struct WindowState: Equatable, Sendable {
         var alphaValue: Double = 0
         var frame: CGRect = .zero
     }
 
-    public enum WindowCanBecomeKey: Equatable {
+    public enum WindowCanBecomeKey: Equatable, Sendable {
         case sharedPanel
         case chatPanel
     }
 
     @ObservableState
-    public struct State {
+    public struct State: Sendable {
         var focusingDocumentURL: URL?
         public var colorScheme: ColorScheme = .light
 
@@ -38,7 +38,7 @@ public struct Widget {
 
         // MARK: CircularWidget
 
-        public struct CircularWidgetState: Equatable {
+        public struct CircularWidgetState: Equatable, Sendable {
             var isProcessingCounters = [CircularWidget.IsProcessingCounter]()
             var isProcessing: Bool = false
         }

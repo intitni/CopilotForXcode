@@ -111,10 +111,10 @@ public final class WebScrapper {
         navigationError = nil
         var retryCount = 0
         _ = webView.load(.init(url: url))
-        while !webViewDidFinishLoading {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !webViewDidFinishLoading, Date() < deadline {
             try await Task.sleep(nanoseconds: 10_000_000)
         }
-        let deadline = Date().addingTimeInterval(timeout)
         if let navigationError { throw navigationError }
         while retryCount < retryLimit, Date() < deadline {
             if let html = try? await getHTML(), !html.isEmpty,

@@ -2,7 +2,7 @@ import Client
 import HostApp
 import LaunchAgentManager
 import SwiftUI
-import UpdateChecker
+@preconcurrency import UpdateChecker
 import XPCShared
 
 struct VisualEffect: NSViewRepresentable {
@@ -11,7 +11,7 @@ struct VisualEffect: NSViewRepresentable {
 }
 
 class TheUpdateCheckerDelegate: UpdateCheckerDelegate {
-    func prepareForRelaunch(finish: @escaping () -> Void) {
+    func prepareForRelaunch(finish: @Sendable @escaping () -> Void) {
         Task {
             let service = try? getService()
             try? await service?.quitService()
@@ -20,7 +20,7 @@ class TheUpdateCheckerDelegate: UpdateCheckerDelegate {
     }
 }
 
-let updateCheckerDelegate = TheUpdateCheckerDelegate()
+@MainActor let updateCheckerDelegate = TheUpdateCheckerDelegate()
 
 @main
 struct CopilotForXcodeApp: App {

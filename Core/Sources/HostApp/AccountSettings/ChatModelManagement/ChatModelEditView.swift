@@ -1,5 +1,5 @@
 import AIModel
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import OpenAIService
 import Preferences
 import SwiftUI

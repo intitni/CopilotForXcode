@@ -1,7 +1,7 @@
 import ActiveApplicationMonitor
 import AppKit
 import ChatTab
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Dependencies
 import Foundation
 import Preferences

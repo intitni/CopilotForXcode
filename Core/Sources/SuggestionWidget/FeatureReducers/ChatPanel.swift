@@ -1,15 +1,15 @@
 import ActiveApplicationMonitor
 import AppKit
-import ChatTab
-import ComposableArchitecture
+@preconcurrency import ChatTab
+@preconcurrency import ComposableArchitecture
 import SwiftUI
 
-public enum ChatTabBuilderCollection: Equatable {
+public enum ChatTabBuilderCollection: Equatable, Sendable {
     case folder(title: String, kinds: [ChatTabKind])
     case kind(ChatTabKind)
 }
 
-public struct ChatTabKind: Equatable {
+public struct ChatTabKind: Equatable, Sendable {
     public var builder: any ChatTabBuilder
     var title: String { builder.title }
 
@@ -23,8 +23,8 @@ public struct ChatTabKind: Equatable {
 }
 
 @Reducer
-public struct ChatPanel {
-    public struct ChatTabGroup: Equatable {
+public struct ChatPanel: Sendable {
+    public struct ChatTabGroup: Equatable, Sendable {
         public var tabInfo: IdentifiedArray<String, ChatTabInfo>
         public var tabCollection: [ChatTabBuilderCollection]
         public var selectedTabId: String?
@@ -46,7 +46,7 @@ public struct ChatPanel {
     }
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State: Equatable, Sendable {
         public var chatTabGroup = ChatTabGroup()
         var colorScheme: ColorScheme = .light
         public internal(set) var isPanelDisplayed = false

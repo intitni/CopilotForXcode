@@ -1,5 +1,5 @@
 import ActiveApplicationMonitor
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Preferences
 import SharedUIComponents
 import SuggestionBasic

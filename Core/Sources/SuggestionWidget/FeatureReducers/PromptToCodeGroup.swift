@@ -1,13 +1,13 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Foundation
 import PromptToCodeService
 import SuggestionBasic
 import XcodeInspector
 
 @Reducer
-public struct PromptToCodeGroup {
+public struct PromptToCodeGroup: Sendable {
     @ObservableState
-    public struct State {
+    public struct State: Sendable {
         public var promptToCodes: IdentifiedArrayOf<PromptToCodePanel.State> = []
         public var activeDocumentURL: PromptToCodePanel.State.ID? = XcodeInspector.shared
             .realtimeActiveDocumentURL
@@ -84,9 +84,11 @@ public struct PromptToCodeGroup {
                 )
 
             case let .updatePromptToCodeRange(id, snippetId, range):
-                if let p = state.promptToCodes[id: id], p.promptToCodeState.isAttachedToTarget {
-                    state.promptToCodes[id: id]?.promptToCodeState.snippets[id: snippetId]?
-                        .attachedRange = range
+                if var panel = state.promptToCodes[id: id], panel.promptToCodeState.isAttachedToTarget {
+                    panel.$promptToCodeState.withLock { sharedState in
+                        sharedState.snippets[id: snippetId]?.attachedRange = range
+                    }
+                    state.promptToCodes[id: id] = panel
                 }
                 return .none
 
@@ -183,4 +185,3 @@ public struct PromptToCodeGroup {
         }
     }
 }
-

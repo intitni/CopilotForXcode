@@ -1,6 +1,6 @@
 import AppKit
 import Combine
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import MarkdownUI
 import OpenAIService
 import SharedUIComponents

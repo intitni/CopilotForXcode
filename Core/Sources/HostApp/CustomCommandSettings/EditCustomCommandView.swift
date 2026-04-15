@@ -1,4 +1,4 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import MarkdownUI
 import Preferences
 import SwiftUI

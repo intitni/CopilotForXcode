@@ -1,7 +1,7 @@
 import AppKit
 import AsyncAlgorithms
 import ChatTab
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Dependencies
 import Foundation
 import SharedUIComponents

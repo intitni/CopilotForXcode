@@ -46,7 +46,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            exact: "1.16.1"
+            exact: "1.25.5"
         ),
         // quick hack to support custom UserDefaults
         // https://github.com/sindresorhus/KeyboardShortcuts

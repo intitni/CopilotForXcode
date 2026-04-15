@@ -3,7 +3,7 @@ import ChatService
 import ChatTab
 import CodableWrappers
 import Combine
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import DebounceFunction
 import Foundation
 import OpenAIService

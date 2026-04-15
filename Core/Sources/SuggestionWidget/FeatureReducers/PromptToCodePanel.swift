@@ -1,6 +1,6 @@
 import AppKit
 import ChatBasic
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import CustomAsyncAlgorithms
 import Dependencies
 import Foundation
@@ -12,14 +12,14 @@ import SuggestionBasic
 import XcodeInspector
 
 @Reducer
-public struct PromptToCodePanel {
+public struct PromptToCodePanel: Sendable {
     @ObservableState
-    public struct State: Identifiable {
-        public enum FocusField: Equatable {
+    public struct State: Identifiable, Sendable {
+        public enum FocusField: Equatable, Sendable {
             case textField
         }
 
-        public enum ClickedButton: Equatable {
+        public enum ClickedButton: Equatable, Sendable {
             case accept
             case acceptAndContinue
         }
@@ -55,9 +55,11 @@ public struct PromptToCodePanel {
                 )
             }
             set {
-                promptToCodeState.snippets = IdentifiedArrayOf(
-                    uniqueElements: newValue.map(\.snippet)
-                )
+                $promptToCodeState.withLock { sharedState in
+                    sharedState.snippets = IdentifiedArrayOf(
+                        uniqueElements: newValue.map(\.snippet)
+                    )
+                }
             }
         }
 
@@ -123,18 +125,22 @@ public struct PromptToCodePanel {
                 return .none
 
             case .selectionRangeToggleTapped:
-                state.promptToCodeState.isAttachedToTarget.toggle()
+                state.$promptToCodeState.withLock { sharedState in
+                    sharedState.isAttachedToTarget.toggle()
+                }
                 return .none
 
             case .modifyCodeButtonTapped:
                 guard !state.promptToCodeState.isGenerating else { return .none }
                 let copiedState = state
                 let contextInputController = state.contextInputController
-                state.promptToCodeState.isGenerating = true
-                state.promptToCodeState.pushHistory(instruction: .init(
-                    attributedString: contextInputController.instruction
-                ))
-                state.promptToCodeState.references = []
+                state.$promptToCodeState.withLock { sharedState in
+                    sharedState.isGenerating = true
+                    sharedState.pushHistory(instruction: .init(
+                        attributedString: contextInputController.instruction
+                    ))
+                    sharedState.references = []
+                }
                 let snippets = state.promptToCodeState.snippets
 
                 return .run { send in
@@ -239,20 +245,27 @@ public struct PromptToCodePanel {
                 }.cancellable(id: CancellationKey.modifyCode(state.id), cancelInFlight: true)
 
             case .revertButtonTapped:
-                if let instruction = state.promptToCodeState.popHistory() {
+                let instruction = state.$promptToCodeState.withLock { sharedState in
+                    sharedState.popHistory()
+                }
+                if let instruction {
                     state.contextInputController.instruction = instruction
                 }
                 return .none
 
             case .stopRespondingButtonTapped:
-                state.promptToCodeState.isGenerating = false
-                state.promptToCodeState.status = []
+                state.$promptToCodeState.withLock { sharedState in
+                    sharedState.isGenerating = false
+                    sharedState.status = []
+                }
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case .modifyCodeFinished:
                 state.contextInputController.instruction = .init("")
-                state.promptToCodeState.isGenerating = false
-                state.promptToCodeState.status = []
+                state.$promptToCodeState.withLock { sharedState in
+                    sharedState.isGenerating = false
+                    sharedState.status = []
+                }
 
                 if state.promptToCodeState.snippets.allSatisfy({ snippet in
                     snippet.modifiedCode.isEmpty && snippet.description.isEmpty && snippet
@@ -266,7 +279,9 @@ public struct PromptToCodePanel {
                 return .none
 
             case .modifyCodeCancelled:
-                state.promptToCodeState.isGenerating = false
+                state.$promptToCodeState.withLock { sharedState in
+                    sharedState.isGenerating = false
+                }
                 return .none
 
             case .cancelButtonTapped:
@@ -294,11 +309,15 @@ public struct PromptToCodePanel {
                 }
 
             case let .statusUpdated(status):
-                state.promptToCodeState.status = status
+                state.$promptToCodeState.withLock { sharedState in
+                    sharedState.status = status
+                }
                 return .none
 
             case let .referencesUpdated(references):
-                state.promptToCodeState.references = references
+                state.$promptToCodeState.withLock { sharedState in
+                    sharedState.references = references
+                }
                 return .none
             }
         }

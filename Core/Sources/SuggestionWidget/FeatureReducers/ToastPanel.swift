@@ -1,12 +1,12 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Preferences
 import SwiftUI
-import Toast
+@preconcurrency import Toast
 
 @Reducer
-public struct ToastPanel {
+public struct ToastPanel: Sendable {
     @ObservableState
-    public struct State: Equatable {
+    public struct State: Equatable, Sendable {
         var toast: Toast.State = .init()
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false

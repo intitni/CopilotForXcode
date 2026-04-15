@@ -1,6 +1,6 @@
 import AppKit
 import ChatTab
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Foundation
 import SwiftUI
 

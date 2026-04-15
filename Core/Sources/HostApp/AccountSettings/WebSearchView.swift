@@ -1,6 +1,6 @@
 import AppKit
 import Client
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import OpenAIService
 import Preferences
 import SuggestionBasic

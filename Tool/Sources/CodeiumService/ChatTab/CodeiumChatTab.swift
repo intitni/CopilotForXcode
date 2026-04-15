@@ -1,7 +1,7 @@
 import AppKit
 import ChatTab
 import Combine
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import Logger
 import Preferences
 import SwiftUI

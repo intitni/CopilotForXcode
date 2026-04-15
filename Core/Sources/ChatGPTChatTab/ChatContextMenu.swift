@@ -1,6 +1,6 @@
 import AppKit
 import ChatService
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import SharedUIComponents
 import SwiftUI
 

@@ -1,4 +1,4 @@
-import ComposableArchitecture
+@preconcurrency import ComposableArchitecture
 import SwiftUI
 
 struct BaseURLPicker<TrailingContent: View>: View {
