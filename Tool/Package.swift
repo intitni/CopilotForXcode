@@ -52,6 +52,7 @@ let package = Package(
         .library(name: "CommandHandler", targets: ["CommandHandler"]),
         .library(name: "CodeDiff", targets: ["CodeDiff"]),
         .library(name: "BuiltinExtension", targets: ["BuiltinExtension"]),
+        .library(name: "CustomSuggestionService", targets: ["CustomSuggestionService"]),
         .library(name: "WebSearchService", targets: ["WebSearchService"]),
         .library(name: "WebScrapper", targets: ["WebScrapper"]),
         .library(
@@ -458,6 +459,27 @@ let package = Package(
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
+        ),
+
+        // MARK: - Custom Model Suggestion
+
+        .target(
+            name: "CustomSuggestionService",
+            dependencies: [
+                "AIModel",
+                "Preferences",
+                "Keychain",
+                "Logger",
+                "BuiltinExtension",
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
+                .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
+                .product(name: "Parsing", package: "swift-parsing"),
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
+            ]
+        ),
+        .testTarget(
+            name: "CustomSuggestionServiceTests",
+            dependencies: ["CustomSuggestionService", "AIModel"]
         ),
 
         // MARK: - OpenAI

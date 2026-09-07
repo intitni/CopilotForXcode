@@ -3,6 +3,7 @@ import Foundation
 public enum BuiltInSuggestionFeatureProvider: Int, CaseIterable, Codable {
     case gitHubCopilot
     case codeium
+    case customModel
 }
 
 public enum SuggestionFeatureProvider: RawRepresentable, Hashable {

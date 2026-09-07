@@ -1,5 +1,6 @@
 import BuiltinExtension
 import CodeiumService
+import CustomSuggestionService
 import Combine
 import CommandHandler
 import Dependencies
@@ -65,6 +66,7 @@ public final class Service {
         BuiltinExtensionManager.shared.addExtensions([
             GitHubCopilotExtension(workspacePool: workspacePool),
             CodeiumExtension(workspacePool: workspacePool),
+            CustomModelExtension(),
         ])
 
         let guiController = GraphicalUserInterfaceController()

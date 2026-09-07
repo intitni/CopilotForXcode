@@ -143,6 +143,9 @@ struct SuggestionSettingsGeneralSectionView: View {
                     case .codeium:
                         Text("Codeium")
                             .tag(SuggestionFeatureProviderOption(name: "", builtInProvider: $0))
+                    case .customModel:
+                        Text("Custom Model")
+                            .tag(SuggestionFeatureProviderOption(name: "", builtInProvider: $0))
                     }
                 }
 

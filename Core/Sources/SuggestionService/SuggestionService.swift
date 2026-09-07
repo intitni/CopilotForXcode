@@ -1,5 +1,6 @@
 import BuiltinExtension
 import CodeiumService
+import CustomSuggestionService
 import enum CopilotForXcodeKit.SuggestionServiceError
 import struct CopilotForXcodeKit.WorkspaceInfo
 import Foundation
@@ -52,6 +53,11 @@ public actor SuggestionService: SuggestionServiceType {
         case .builtIn(.codeium):
             let provider = BuiltinExtensionSuggestionServiceProvider(
                 extension: CodeiumExtension.self
+            )
+            return SuggestionService(provider: provider)
+        case .builtIn(.customModel):
+            let provider = BuiltinExtensionSuggestionServiceProvider(
+                extension: CustomModelExtension.self
             )
             return SuggestionService(provider: provider)
         case .builtIn(.gitHubCopilot), .extension:

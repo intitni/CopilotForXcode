@@ -50,6 +50,8 @@ extension BuiltinExtensionManager {
                     ext.extensionIdentifier == "com.github.copilot"
                 case .codeium:
                     ext.extensionIdentifier == "com.codeium"
+                case .customModel:
+                    ext.extensionIdentifier == "com.intii.CopilotForXcode.CustomModel"
                 }
             case let .extension(_, bundleIdentifier):
                 ext.extensionIdentifier == bundleIdentifier

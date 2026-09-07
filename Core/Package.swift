@@ -72,6 +72,7 @@ let package = Package(
         .target(
             name: "Service",
             dependencies: [
+                .product(name: "CustomSuggestionService", package: "Tool"),
                 "SuggestionWidget",
                 "SuggestionService",
                 "ChatService",
@@ -144,6 +145,7 @@ let package = Package(
         .target(
             name: "SuggestionService",
             dependencies: [
+                .product(name: "CustomSuggestionService", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),

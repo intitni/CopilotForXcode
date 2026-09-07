@@ -182,6 +182,13 @@
         "identifier" : "TokenEncoderTests",
         "name" : "TokenEncoderTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "CustomSuggestionServiceTests",
+        "name" : "CustomSuggestionServiceTests"
+      }
     }
   ],
   "version" : 1
