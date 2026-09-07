@@ -46,7 +46,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            exact: "1.16.1"
+            exact: "1.26.2"
         ),
         // quick hack to support custom UserDefaults
         // https://github.com/sindresorhus/KeyboardShortcuts
@@ -233,6 +233,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "CustomAsyncAlgorithms", package: "Tool"),
                 .product(name: "CodeDiff", package: "Tool"),
+                .product(name: "CommandHandler", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),

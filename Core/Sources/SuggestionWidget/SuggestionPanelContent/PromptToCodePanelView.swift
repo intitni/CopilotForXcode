@@ -1082,7 +1082,7 @@ extension PromptToCodePanelView {
 
 #Preview("Multiple Snippets") {
     PromptToCodePanelView(store: .init(initialState: .init(
-        promptToCodeState: Shared(ModificationState(
+        promptToCodeState: Shared(value: ModificationState(
             source: .init(
                 language: CodeLanguage.builtIn(.swift),
                 documentURL: URL(
@@ -1164,7 +1164,7 @@ extension PromptToCodePanelView {
 
 #Preview("Detached With Long File Name") {
     PromptToCodePanelView(store: .init(initialState: .init(
-        promptToCodeState: Shared(ModificationState(
+        promptToCodeState: Shared(value: ModificationState(
             source: .init(
                 language: CodeLanguage.builtIn(.swift),
                 documentURL: URL(
@@ -1219,7 +1219,7 @@ extension PromptToCodePanelView {
 
 #Preview("Generating") {
     PromptToCodePanelView(store: .init(initialState: .init(
-        promptToCodeState: Shared(ModificationState(
+        promptToCodeState: Shared(value: ModificationState(
             source: .init(
                 language: CodeLanguage.builtIn(.swift),
                 documentURL: URL(
