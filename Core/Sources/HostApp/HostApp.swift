@@ -19,6 +19,7 @@ struct HostApp {
         var chatModelManagement = ChatModelManagement.State()
         var embeddingModelManagement = EmbeddingModelManagement.State()
         var webSearchSettings = WebSearchSettings.State()
+        var customModelSuggestion = CustomModelSuggestion.State()
     }
 
     enum Action {
@@ -27,6 +28,7 @@ struct HostApp {
         case chatModelManagement(ChatModelManagement.Action)
         case embeddingModelManagement(EmbeddingModelManagement.Action)
         case webSearchSettings(WebSearchSettings.Action)
+        case customModelSuggestion(CustomModelSuggestion.Action)
     }
 
     @Dependency(\.toast) var toast
@@ -52,6 +54,10 @@ struct HostApp {
             WebSearchSettings()
         }
 
+        Scope(state: \.customModelSuggestion, action: \.customModelSuggestion) {
+            CustomModelSuggestion()
+        }
+
         Reduce { _, action in
             switch action {
             case .appear:
@@ -70,6 +76,9 @@ struct HostApp {
                 return .none
                 
             case .webSearchSettings:
+                return .none
+
+            case .customModelSuggestion:
                 return .none
             }
         }

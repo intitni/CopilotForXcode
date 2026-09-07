@@ -58,10 +58,13 @@ struct ServiceView: View {
                     )
 
                     ScrollView {
-                        OtherSuggestionServicesView().padding()
+                        CustomModelSuggestionView(store: store.scope(
+                            state: \.customModelSuggestion,
+                            action: \.customModelSuggestion
+                        ))
                     }.sidebarItem(
                         tag: 5,
-                        title: "Other Suggestion Services",
+                        title: "Custom Model",
                         subtitle: "Suggestion",
                         image: "globe"
                     )

@@ -122,6 +122,7 @@ let package = Package(
         .target(
             name: "HostApp",
             dependencies: [
+                .product(name: "CustomSuggestionService", package: "Tool"),
                 "Client",
                 "LaunchAgentManager",
                 "PlusFeatureFlag",
