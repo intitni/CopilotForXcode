@@ -128,6 +128,7 @@ iOSInjectionProject/
 https://www.toptal.com/developers/gitignore/api/xcode,macos,swift,swiftpackagemanager
 
 Secrets.xcconfig
+Local.xcconfig
 Python/Python.xcframework
 Python/python-stdlib
 Python/site-packages/*

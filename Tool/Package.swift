@@ -474,7 +474,6 @@ let package = Package(
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
                 .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
                 .product(name: "Parsing", package: "swift-parsing"),
-                .product(name: "CodableWrappers", package: "CodableWrappers"),
             ]
         ),
         .testTarget(

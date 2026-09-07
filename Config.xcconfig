@@ -11,3 +11,5 @@ EXTENSION_BUNDLE_DISPLAY_NAME = Copilot
 EXTENSION_SERVICE_NAME = CopilotForXcodeExtensionService
 
 // see also target Configs
+
+#include? "Local.xcconfig"

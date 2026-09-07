@@ -1,7 +1,6 @@
 import CopilotForXcodeKit
 import Foundation
 import AIModel
-import Parsing
 
 /// Prompts may behave differently in different LLMs.
 /// This protocol allows for different strategies to be used to generate prompts.
