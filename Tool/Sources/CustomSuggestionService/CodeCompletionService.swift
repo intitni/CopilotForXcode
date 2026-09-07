@@ -93,24 +93,49 @@ public struct CodeCompletionService {
     ) async throws -> [String] {
         let apiKey = apiKey(from: model)
 
+        let options = ChatAPIOptions.current(for: model, apiKey: apiKey)
+
         switch model.format {
         case .openAI, .openAICompatible:
-            let service = OpenAIService(
-                url: model.endpoint,
-                endpoint: .chatCompletion,
-                modelName: model.info.modelName,
-                contextWindow: model.info.maxTokens,
-                maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
-                stopWords: prompt.stopWords,
-                apiKey: apiKey
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            switch options.api {
+            case .responses:
+                let service = OpenAIResponsesService(
+                    url: Self.responsesEndpoint(for: model),
+                    modelName: model.info.modelName,
+                    contextWindow: model.info.maxTokens,
+                    maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
+                    stopWords: prompt.stopWords,
+                    apiKey: apiKey,
+                    reasoningEffort: options.reasoningEffort,
+                    extraHeaders: options.extraHeaders
+                )
+                let result = try await service.getCompletions(
+                    prompt,
+                    streamStopStrategy: streamStopStrategy,
+                    count: count
+                )
+                try Task.checkCancellation()
+                return result
+            case .chatCompletions:
+                let service = OpenAIService(
+                    url: model.endpoint,
+                    endpoint: .chatCompletion,
+                    modelName: model.info.modelName,
+                    contextWindow: model.info.maxTokens,
+                    maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
+                    stopWords: prompt.stopWords,
+                    apiKey: apiKey,
+                    reasoningEffort: options.reasoningEffort,
+                    extraHeaders: options.extraHeaders
+                )
+                let result = try await service.getCompletions(
+                    prompt,
+                    streamStopStrategy: streamStopStrategy,
+                    count: count
+                )
+                try Task.checkCancellation()
+                return result
+            }
         case .azureOpenAI:
             let service = AzureOpenAIService(
                 url: model.endpoint,
@@ -167,7 +192,8 @@ public struct CodeCompletionService {
                 contextWindow: model.info.maxTokens,
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 stopWords: prompt.stopWords,
-                apiKey: apiKey
+                apiKey: apiKey,
+                extraHeaders: options.extraHeaders
             )
             let result = try await service.getCompletions(
                 prompt,
@@ -323,6 +349,14 @@ public struct CodeCompletionService {
         case .unknown:
             throw Error.unknownFormat
         }
+    }
+
+    /// `ChatModel.endpoint` always points at `/v1/chat/completions`; derive the Responses API URL.
+    static func responsesEndpoint(for model: ChatModel) -> String {
+        let baseURL = model.info.baseURL
+        if baseURL.isEmpty { return "https://api.openai.com/v1/responses" }
+        if model.format == .openAICompatible, model.info.isFullURL { return baseURL }
+        return "\(baseURL)/v1/responses"
     }
 
     func apiKey(from model: ChatModel) -> String {

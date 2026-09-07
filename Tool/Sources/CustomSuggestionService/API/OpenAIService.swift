@@ -11,6 +11,10 @@ public actor OpenAIService {
     let temperature: Double
     let apiKey: String
     let stopWords: [String]
+    /// When set, the request takes the reasoning model shape: `reasoning_effort` is sent,
+    /// `max_completion_tokens` replaces `max_tokens`, `temperature` and `stop` are omitted.
+    let reasoningEffort: ReasoningEffort?
+    let extraHeaders: [(name: String, value: String)]
 
     public enum Endpoint {
         case completion
@@ -25,8 +29,12 @@ public actor OpenAIService {
         maxToken: Int,
         temperature: Double = 0.2,
         stopWords: [String] = [],
-        apiKey: String
+        apiKey: String,
+        reasoningEffort: ReasoningEffort? = nil,
+        extraHeaders: [(name: String, value: String)] = []
     ) {
+        self.reasoningEffort = reasoningEffort
+        self.extraHeaders = extraHeaders
         self.url = url.flatMap(URL.init(string:)) ?? {
             switch endpoint {
             case .chatCompletion:
@@ -132,13 +140,16 @@ extension OpenAIService {
     func sendMessages(
         _ messages: [Message]
     ) async throws -> ResponseStream<ChatCompletionsStreamDataChunk> {
+        let isReasoningRequest = reasoningEffort != nil
         let requestBody = ChatCompletionRequestBody(
             model: modelName,
             messages: messages,
-            temperature: temperature,
+            temperature: isReasoningRequest ? nil : temperature,
             stream: true,
-            stop: stopWords,
-            max_tokens: maxToken
+            stop: isReasoningRequest ? nil : stopWords,
+            max_tokens: isReasoningRequest ? nil : maxToken,
+            max_completion_tokens: isReasoningRequest ? maxToken : nil,
+            reasoning_effort: reasoningEffort?.rawValue
         )
 
         var request = URLRequest(url: url)
@@ -147,6 +158,7 @@ extension OpenAIService {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
 
         guard let response = response as? HTTPURLResponse else {
@@ -160,22 +172,32 @@ extension OpenAIService {
             throw Error.otherError(text)
         }
 
-        return ResponseStream(result: result) {
-            var text = $0
-            if text.hasPrefix("data: ") {
-                text = String(text.dropFirst(6))
-            }
-            do {
-                let chunk = try JSONDecoder().decode(
-                    ChatCompletionsStreamDataChunk.self,
-                    from: text.data(using: .utf8) ?? Data()
-                )
-                return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
-            } catch {
-                print(error)
-                throw error
-            }
+        return ResponseStream(result: result, lineExtractor: Self.parseChatCompletionsStreamLine)
+    }
+
+    /// Parses one line of the event stream, or a whole non-streaming JSON body.
+    static func parseChatCompletionsStreamLine(
+        _ line: String
+    ) throws -> ResponseStream<ChatCompletionsStreamDataChunk>.LineContent {
+        guard let payload = SSELine.payload(of: line) else { return .init(chunk: nil, done: false) }
+        if payload == "[DONE]" { return .init(chunk: nil, done: true) }
+        let chunk = try JSONDecoder().decode(
+            ChatCompletionsStreamDataChunk.self,
+            from: Data(payload.utf8)
+        )
+        // A non-streaming body carries the whole message instead of a delta.
+        if let choice = chunk.choices?.first, choice.delta == nil, let message = choice.message {
+            return .init(
+                chunk: .init(choices: [.init(
+                    delta: .init(role: message.role, content: message.content),
+                    index: choice.index,
+                    finish_reason: choice.finish_reason ?? "stop",
+                    message: nil
+                )]),
+                done: true
+            )
         }
+        return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
     }
 
     /// https://platform.openai.com/docs/api-reference/chat/create
@@ -191,6 +213,9 @@ extension OpenAIService {
         var presence_penalty: Double?
         var frequency_penalty: Double?
         var logit_bias: [String: Double]?
+        /// Reasoning models reject `max_tokens` and expect this field instead.
+        var max_completion_tokens: Int?
+        var reasoning_effort: String?
 
         init(
             model: String,
@@ -203,8 +228,12 @@ extension OpenAIService {
             max_tokens: Int? = nil,
             presence_penalty: Double? = nil,
             frequency_penalty: Double? = nil,
-            logit_bias: [String: Double]? = nil
+            logit_bias: [String: Double]? = nil,
+            max_completion_tokens: Int? = nil,
+            reasoning_effort: String? = nil
         ) {
+            self.max_completion_tokens = max_completion_tokens
+            self.reasoning_effort = reasoning_effort
             self.model = model
             self.messages = messages
             self.temperature = temperature
@@ -249,6 +278,8 @@ extension OpenAIService {
             var delta: Delta?
             var index: Int?
             var finish_reason: String?
+            /// Present in a non-streaming response body.
+            var message: Message?
 
             struct Delta: Decodable {
                 var role: Message.Role?
@@ -290,6 +321,7 @@ extension OpenAIService {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
 
         guard let response = response as? HTTPURLResponse else {
@@ -303,22 +335,17 @@ extension OpenAIService {
             throw Error.otherError(text)
         }
 
-        return ResponseStream(result: result) {
-            var text = $0
-            if text.hasPrefix("data: ") {
-                text = String(text.dropFirst(6))
-            }
-            do {
-                let chunk = try JSONDecoder().decode(
-                    CompletionsStreamDataChunk.self,
-                    from: text.data(using: .utf8) ?? Data()
-                )
-                return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
-            } catch {
-                print(error)
-                throw error
-            }
-        }
+        return ResponseStream(result: result, lineExtractor: Self.parseCompletionsStreamLine)
+    }
+
+    /// Parses one line of the event stream, or a whole non-streaming JSON body.
+    static func parseCompletionsStreamLine(
+        _ line: String
+    ) throws -> ResponseStream<CompletionsStreamDataChunk>.LineContent {
+        guard let payload = SSELine.payload(of: line) else { return .init(chunk: nil, done: false) }
+        if payload == "[DONE]" { return .init(chunk: nil, done: true) }
+        let chunk = try JSONDecoder().decode(CompletionsStreamDataChunk.self, from: Data(payload.utf8))
+        return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
     }
 
     /// https://platform.openai.com/docs/api-reference/chat/create

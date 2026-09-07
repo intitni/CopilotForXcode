@@ -56,6 +56,18 @@ struct CustomModelSuggestionView: View {
                     )
                 }
 
+                if modelType == nil {
+                    Section {
+                        ChatAPIOptionsPicker()
+                    } header: {
+                        Text("Chat Model API")
+                    } footer: {
+                        Text(
+                            "Applies to OpenAI and OpenAI compatible chat models. Setting a reasoning effort switches the request to the reasoning model shape: reasoning_effort is sent, max_completion_tokens replaces max_tokens, temperature and stop are omitted. Anthropic models always use /v1/messages."
+                        )
+                    }
+                }
+
                 Section {
                     Toggle("Verbose Log (Logs to Console.app)", isOn: settings.$verboseLog)
                 }
@@ -181,6 +193,35 @@ struct RequestStrategyPicker: View {
             Toggle(isOn: $settings.fimPromptIsRaw) { Text("Raw Prompt") }
             Toggle(isOn: $settings.fimAttachFileInfo) { Text("Attach File Info") }
             TextField(text: $settings.fimStopToken) { Text("FIM Stop Token") }
+        }
+    }
+}
+
+struct ChatAPIOptionsPicker: View {
+    final class Settings: ObservableObject {
+        @AppStorage(\.customSuggestionOpenAIAPI) var openAIAPI
+        @AppStorage(\.customSuggestionReasoningEffort) var reasoningEffort
+    }
+
+    @StateObject var settings = Settings()
+
+    var body: some View {
+        Picker(selection: settings.$openAIAPI, label: Text("OpenAI Endpoint")) {
+            ForEach(OpenAIChatAPI.allCases, id: \.rawValue) { api in
+                switch api {
+                case .chatCompletions:
+                    Text("Chat Completions (/v1/chat/completions)").tag(api.rawValue)
+                case .responses:
+                    Text("Responses (/v1/responses)").tag(api.rawValue)
+                }
+            }
+        }
+
+        Picker(selection: settings.$reasoningEffort, label: Text("Reasoning Effort")) {
+            Text("Not Set").tag("")
+            ForEach(ReasoningEffort.allCases, id: \.rawValue) { effort in
+                Text(effort.rawValue.capitalized).tag(effort.rawValue)
+            }
         }
     }
 }

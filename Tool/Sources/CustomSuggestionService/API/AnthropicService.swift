@@ -10,6 +10,7 @@ public actor AnthropicService {
     let temperature: Double
     let apiKey: String
     let stopWords: [String]
+    let extraHeaders: [(name: String, value: String)]
 
     init(
         url: String? = nil,
@@ -18,8 +19,10 @@ public actor AnthropicService {
         maxToken: Int,
         temperature: Double = 0.2,
         stopWords: [String] = [],
-        apiKey: String
+        apiKey: String,
+        extraHeaders: [(name: String, value: String)] = []
     ) {
+        self.extraHeaders = extraHeaders
         self.url = url.flatMap(URL.init(string:)) ??
             URL(string: "https://api.anthropic.com/v1/messages")!
         self.modelName = modelName
@@ -129,6 +132,7 @@ extension AnthropicService {
         request.setValue("application/json", forHTTPHeaderField: "content-type")
         request.setValue("\(apiKey)", forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setExtraHeaders(extraHeaders)
 
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)

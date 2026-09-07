@@ -51,6 +51,16 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: "", key: "CustomSuggestionService-RequestStrategyId")
     }
 
+    /// Raw value of `OpenAIChatAPI`: which endpoint OpenAI (compatible) chat models are called with.
+    var customSuggestionOpenAIAPI: PreferenceKey<String> {
+        .init(defaultValue: "chatCompletions", key: "CustomSuggestionService-OpenAIAPI")
+    }
+
+    /// Raw value of `ReasoningEffort`. Empty means the field is not sent.
+    var customSuggestionReasoningEffort: PreferenceKey<String> {
+        .init(defaultValue: "", key: "CustomSuggestionService-ReasoningEffort")
+    }
+
     /// 0 means unlimited.
     var customSuggestionMaxLines: PreferenceKey<Int> {
         .init(defaultValue: 0, key: "CustomSuggestionService-MaxNumberOfLinesOfSuggestion")
