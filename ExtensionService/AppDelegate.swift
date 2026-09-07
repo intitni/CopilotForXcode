@@ -100,10 +100,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     continue
                 }
                 Logger.service.info("Extension Service will quit.")
-                #if DEBUG
-                #else
                 quit()
-                #endif
             }
         }
     }

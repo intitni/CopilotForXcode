@@ -62,12 +62,6 @@ actor EventHandler {
         withReply reply: @escaping (NSXPCListenerEndpoint?) -> Void
     ) async {
         rescheduleExitTask()
-        #if DEBUG
-        if let endpoint, !(await testXPCListenerEndpoint(endpoint)) {
-            self.endpoint = nil
-        }
-        reply(endpoint)
-        #else
         if await launcher.isApplicationValid {
             Logger.communicationBridge.info("Service app is still valid")
             reply(endpoint)
@@ -76,7 +70,6 @@ actor EventHandler {
             await launcher.launch()
             reply(nil)
         }
-        #endif
     }
 
     func quit(withReply reply: () -> Void) {

@@ -53,11 +53,19 @@ struct General {
         Bundle.main.bundleURL.path.hasPrefix("/Applications")
     }
 
+    static var isDebugBuild: Bool {
+        #if DEBUG
+        true
+        #else
+        false
+        #endif
+    }
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:
-                if Self.bundleIsInApplicationsFolder {
+                if Self.bundleIsInApplicationsFolder || Self.isDebugBuild {
                     return .run { send in
                         await send(.setupLaunchAgentIfNeeded)
                     }
@@ -85,16 +93,12 @@ struct General {
 
             case .setupLaunchAgentIfNeeded:
                 return .run { send in
-                    #if DEBUG
-                    // do not auto install on debug build
-                    #else
                     do {
                         try await LaunchAgentManager()
                             .setupLaunchAgentForTheFirstTimeIfNeeded()
                     } catch {
                         toast(error.localizedDescription, .error)
                     }
-                    #endif
                     await send(.reloadStatus)
                 }
 

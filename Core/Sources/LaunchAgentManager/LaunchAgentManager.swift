@@ -36,6 +36,9 @@ public struct LaunchAgentManager {
     }
 
     public func setupLaunchAgent() async throws {
+        #if DEBUG
+        try await setupLaunchAgentForDebugBuild()
+        #else
         if #available(macOS 13, *) {
             if executableURL.path.hasPrefix("/Applications") {
                 try setupLaunchAgentWithPredefinedPlist()
@@ -49,6 +52,7 @@ public struct LaunchAgentManager {
         let buildNumber = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String)
             .flatMap(Int.init)
         UserDefaults.standard.set(buildNumber, forKey: lastLaunchAgentVersionKey)
+        #endif
     }
 
     public func removeLaunchAgent() async throws {
