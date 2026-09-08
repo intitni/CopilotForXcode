@@ -1,0 +1,36 @@
+name: Test
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    name: Copilot for Xcode Debug
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        id: xcode
+        run: |
+          shopt -s nullglob
+          apps=(/Applications/Xcode_26*.app)
+          if [ ${#apps[@]} -eq 0 ]; then
+            echo "has_xcode26=false" >> "$GITHUB_OUTPUT"
+            echo "Xcode 26 not found; using runner default."
+          else
+            IFS=$'\n' sorted=($(printf '%s\n' "${apps[@]}" | sort -V))
+            app="${sorted[${#sorted[@]}-1]}"
+            sudo xcode-select -s "$app/Contents/Developer"
+            echo "has_xcode26=true" >> "$GITHUB_OUTPUT"
+            echo "Selected $app"
+          fi
+          xcodebuild -version
+
+      - name: Test
+        continue-on-error: ${{ steps.xcode.outputs.has_xcode26 != 'true' }}
+        run: |
+          xcodebuild -workspace "Copilot for Xcode.xcworkspace" -scheme "Copilot for Xcode Debug" \
+            -configuration Debug -destination 'platform=macOS' -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            test -parallel-testing-enabled NO

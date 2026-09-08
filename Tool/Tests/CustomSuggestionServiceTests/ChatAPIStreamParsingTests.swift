@@ -38,6 +38,16 @@ class ChatAPIStreamParsingTests: XCTestCase {
         XCTAssertTrue(try OpenAIResponsesService.parseStreamLine("data: [DONE]").done)
     }
 
+    func test_responses_incomplete_finishes_stream() throws {
+        let truncated = #"data: {"type":"response.incomplete","response":{"id":"resp_truncated","object":"response","status":"incomplete","incomplete_details":{"reason":"max_output_tokens"}}}"#
+        let result = try OpenAIResponsesService.parseStreamLine(truncated)
+        XCTAssertNil(result.chunk?.text)
+        XCTAssertTrue(result.done)
+
+        let other = #"data: {"type":"response.incomplete","response":{"id":"resp_other","object":"response","status":"incomplete","incomplete_details":{"reason":"content_filter"}}}"#
+        XCTAssertTrue(try OpenAIResponsesService.parseStreamLine(other).done)
+    }
+
     func test_responses_error_events_throw() {
         XCTAssertThrowsError(try OpenAIResponsesService.parseStreamLine(
             #"data: {"type":"error","code":"rate_limit","message":"slow down"}"#
@@ -118,6 +128,29 @@ class ChatAPIStreamParsingTests: XCTestCase {
         )
         XCTAssertEqual(options.extraHeaders.map(\.name), ["X-Auth"])
         XCTAssertEqual(options.extraHeaders.first?.value, "Bearer sk-1 for gpt-5.5")
+    }
+
+    func test_parseCompletionsStreamLine_delta_done_and_error() throws {
+        let delta = #"data: {"id":"cmpl-1","object":"text_completion","choices":[{"text":"foo","index":0,"finish_reason":null}]}"#
+        let result = try OpenAIService.parseCompletionsStreamLine(delta)
+        XCTAssertEqual(result.chunk?.choices?.first?.text, "foo")
+        XCTAssertFalse(result.done)
+
+        XCTAssertTrue(try OpenAIService.parseCompletionsStreamLine("data: [DONE]").done)
+        XCTAssertFalse(try OpenAIService.parseCompletionsStreamLine("").done)
+        XCTAssertFalse(try OpenAIService.parseCompletionsStreamLine(": keepalive").done)
+
+        let finished = #"data: {"choices":[{"text":"","index":0,"finish_reason":"stop"}]}"#
+        XCTAssertTrue(try OpenAIService.parseCompletionsStreamLine(finished).done)
+
+        XCTAssertThrowsError(try OpenAIService.parseCompletionsStreamLine(
+            #"data: {"error":{"message":"boom"}}"#
+        )) { error in
+            guard case OpenAIService.Error.apiError(let message) = error else {
+                return XCTFail("expected apiError, got \(error)")
+            }
+            XCTAssertEqual(message, "boom")
+        }
     }
 
     func test_chatCompletions_error_line_throws_apiError() {

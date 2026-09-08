@@ -27,14 +27,23 @@ Most of the logics are implemented inside the package `Core` and `Tool`.
 
 ## Building and Archiving the App
 
-1. Update the xcconfig files, bridgeLaunchAgent.plist, and Tool/Configs/Configurations.swift.
-2. Build or archive the Copilot for Xcode target.
+1. Copy `Local.xcconfig.example` to `Local.xcconfig` and set `DEVELOPMENT_TEAM` to your Apple Developer Team ID. `Local.xcconfig` is gitignored; `Config.xcconfig` and `Config.debug.xcconfig` include it with `#include?`.
+2. Update the xcconfig files, `bridgeLaunchAgent.plist`, and `Tool/Configs/Configurations.swift` if you are changing identifiers.
+3. Build or archive the Copilot for Xcode target.
 
 ## Testing Source Editor Extension and Service
 
-Just run both the `ExtensionService`, `CommunicationBridge` and the `EditorExtension` Target. Read [Testing Your Source Editor Extension](https://developer.apple.com/documentation/xcodekit/testing_your_source_editor_extension) for more details.
+On this fork, run the `Copilot for Xcode Debug` scheme. That is enough for the host, CommunicationBridge, and ExtensionService: the host registers a launch agent at `~/Library/LaunchAgents/dev.com.intii.CopilotForXcode.CommunicationBridge.plist` and loads it with `launchctl bootstrap`. CommunicationBridge is owned by that launch agent — do **not** Run the `CommunicationBridge` or `ExtensionService` schemes. A second ExtensionService from another bundle path is not reused. Keep only one Dev instance running at a time.
 
-If you are not testing the source editor extension, it's recommended to archive and install a debug version of the Copilot for Xcode and test with the bundled source editor extension.
+The `.appex` still follows Apple's editor-extension workflow. Run the `EditorExtension` scheme when you need to debug the source editor extension itself. See [Testing Your Source Editor Extension](https://developer.apple.com/documentation/xcodekit/testing_your_source_editor_extension).
+
+To uninstall the agent, use **General › Remove Launch Agent** in the host app, or:
+
+```bash
+launchctl bootout gui/$(id -u)/dev.com.intii.CopilotForXcode.CommunicationBridge
+```
+
+To debug ExtensionService, use **Debug › Attach to Process…** on the running `CopilotForXcodeExtensionService` process.
 
 ## SwiftUI Previews
 

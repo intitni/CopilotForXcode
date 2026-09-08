@@ -336,6 +336,58 @@ final class ChatAPIOptionsAndSemanticsTests: XCTestCase {
         XCTAssertNil(json["stop"])
     }
 
+    func test_chatAPIOptions_current_defaults_invalid_raw_and_empty_key_filter() async {
+        let (defaults, suite) = isolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let model = ChatModel(
+            id: "model-defaults",
+            name: "Test",
+            format: .openAI,
+            info: .init(
+                modelName: "gpt-5.5",
+                customHeaderInfo: .init(headers: [
+                    .init(key: "", value: "skip-me"),
+                    .init(key: "X-Ok", value: "yes"),
+                ])
+            )
+        )
+
+        let options = await ChatAPIOptions.current(
+            for: model,
+            apiKey: "sk",
+            defaults: defaults
+        )
+        XCTAssertEqual(options.api, .chatCompletions)
+        XCTAssertNil(options.reasoningEffort)
+        XCTAssertEqual(options.reasoningTokenBudget, 1500)
+        XCTAssertEqual(options.extraHeaders.map(\.name), ["X-Ok"])
+        XCTAssertEqual(options.extraHeaders.first?.value, "yes")
+
+        defaults.set(
+            "not-json",
+            forKey: UserDefaultPreferenceKeys().customSuggestionChatModelAPIOptions.key
+        )
+        let invalidStored = await ChatAPIOptions.current(
+            for: model,
+            apiKey: "sk",
+            defaults: defaults
+        )
+        XCTAssertEqual(invalidStored.api, .chatCompletions)
+        XCTAssertNil(invalidStored.reasoningEffort)
+        XCTAssertEqual(invalidStored.reasoningTokenBudget, 1500)
+
+        let (legacyDefaults, legacySuite) = isolatedDefaults()
+        defer { legacyDefaults.removePersistentDomain(forName: legacySuite) }
+        legacyDefaults.set("not-an-api", forKey: ChatModelAPIOptions.legacyOpenAIAPIKey)
+        legacyDefaults.set("not-an-effort", forKey: ChatModelAPIOptions.legacyReasoningEffortKey)
+        let migrated = ChatModelAPIOptions.stored(for: "model-defaults", defaults: legacyDefaults)
+        XCTAssertEqual(migrated.api, .chatCompletions)
+        XCTAssertNil(migrated.reasoningEffort)
+        XCTAssertNil(OpenAIChatAPI(rawValue: "not-an-api"))
+        XCTAssertNil(ReasoningEffort(rawValue: "not-an-effort"))
+    }
+
     func test_customBodyInfo_joinJSON_merge() throws {
         let original = Data(#"{"model":"a","stream":true}"#.utf8)
         let merged = CompletionJSON.mergeCustomBody(

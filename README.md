@@ -12,6 +12,7 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 - Chat
 - Modification
 - Custom Commands to extend Chat and Modification.
+- Custom Model (built-in; OpenAI / OpenAI compatible / Responses API / Claude / Gemini / Ollama / Completion / FIM / Tabby)
 
 ## Table of Contents
 
@@ -32,6 +33,7 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
     - [Setting Up Suggestion Feature](#setting-up-suggestion-feature)
       - [Setting Up GitHub Copilot](#setting-up-github-copilot)
       - [Setting Up Codeium](#setting-up-codeium)
+      - [Setting Up Custom Model](#setting-up-custom-model)
     - [Setting Up Chat Feature](#setting-up-chat-feature)
     - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
   - [Update](#update)
@@ -54,6 +56,7 @@ For more information, check the [Wiki Page](https://copilotforxcode.intii.com/wi
 
 ## Prerequisites
 
+- macOS 13.
 - Public network connection.
 
 For suggestion features:
@@ -182,6 +185,16 @@ The installed language server is located at `~/Library/Application Support/com.i
 > The key is stored in the keychain. When the helper app tries to access the key for the first time, it will prompt you to enter the password to access the keychain. Please select "Always Allow" to let the helper app access the key.
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/Codeium/executable/`.
+
+#### Setting Up Custom Model
+
+1. In the host app, go to **Service › Chat Models** and create or update a model.
+2. Go to **Service › Custom Model**, pick that model (or Completion / FIM / Tabby), and set API options for the selected chat model.
+3. Go to **Feature › Suggestion** and set the suggestion provider to **Custom Model**.
+
+Headers sent to the gateway are only meaningful to the gateway itself and are not forwarded upstream.
+
+Custom Model provider merged from [intitni/CustomSuggestionServiceForCopilotForXcode](https://github.com/intitni/CustomSuggestionServiceForCopilotForXcode) (MIT).
 
 ### Setting Up Chat Feature
 
