@@ -55,7 +55,12 @@ public actor OpenAIService {
 }
 
 extension OpenAIService: CodeCompletionServiceType {
-    func getCompletion(_ request: PromptStrategy) async throws -> AsyncStream<String> {
+    typealias CompletionSequence = AsyncThrowingCompactMapSequence<
+        ResponseStream<ChatCompletionsStreamDataChunk>,
+        String
+    >
+
+    func getCompletion(_ request: PromptStrategy) async throws -> CompletionSequence {
         switch endpoint {
         case .chatCompletion:
             let messages = createMessages(from: request)
@@ -63,12 +68,12 @@ extension OpenAIService: CodeCompletionServiceType {
                 ($0.content, $0.role.rawValue)
             })
             let result = try await sendMessages(messages)
-            return result.compactMap { $0.choices?.first?.delta?.content }.eraseToStream()
+            return result.compactMap { $0.choices?.first?.delta?.content }
         case .completion:
             let prompt = createPrompt(from: request)
             CodeCompletionLogger.logger.logPrompt([(prompt, "user")])
             let result = try await sendPrompt(prompt)
-            return result.compactMap { $0.choices?.first?.text }.eraseToStream()
+            return result.compactMap { $0.choices?.first?.delta?.content }
         }
     }
 }
@@ -83,16 +88,14 @@ public extension OpenAIService {
 
     enum Error: Swift.Error, LocalizedError {
         case decodeError(Swift.Error)
-        case apiError(APIError)
+        case apiError(String)
         case otherError(String)
 
         public var errorDescription: String? {
             switch self {
             case let .decodeError(error):
                 return error.localizedDescription
-            case let .apiError(error):
-                return error.message
-            case let .otherError(message):
+            case let .apiError(message), let .otherError(message):
                 return message
             }
         }
@@ -160,27 +163,78 @@ extension OpenAIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
-
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
-        }
-
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
-            }
-            throw Error.otherError(text)
-        }
-
-        return ResponseStream(result: result, lineExtractor: Self.parseChatCompletionsStreamLine)
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try Self.parseChatCompletionsBody($0, url: url) },
+            parseLine: Self.parseChatCompletionsStreamLine
+        )
     }
 
-    /// Parses one line of the event stream, or a whole non-streaming JSON body.
+    /// Parses a non-streaming `application/json` chat completions body.
+    static func parseChatCompletionsBody(
+        _ text: String,
+        url: URL
+    ) throws -> ChatCompletionsStreamDataChunk {
+        if let message = APIErrorPayload.message(in: text) {
+            throw Error.apiError(message)
+        }
+        do {
+            let body = try JSONDecoder().decode(
+                ChatCompletionResponseBody.self,
+                from: Data(text.utf8)
+            )
+            return chatChunk(from: body)
+        } catch let error as Error {
+            throw error
+        } catch {
+            throw Error.otherError(CompletionHTTP.parseFailureMessage(url: url))
+        }
+    }
+
+    static func chatChunk(from body: ChatCompletionResponseBody) -> ChatCompletionsStreamDataChunk {
+        let choice = body.choices.first
+        return ChatCompletionsStreamDataChunk(
+            id: body.id,
+            object: body.object,
+            model: body.model,
+            choices: [
+                .init(
+                    delta: .init(role: choice?.message.role, content: choice?.message.content),
+                    index: choice?.index,
+                    finish_reason: choice?.finish_reason ?? "stop",
+                    message: choice?.message
+                ),
+            ]
+        )
+    }
+
+    static func asChatChunk(_ chunk: CompletionsStreamDataChunk) -> ChatCompletionsStreamDataChunk {
+        ChatCompletionsStreamDataChunk(
+            id: chunk.id,
+            object: chunk.object,
+            model: chunk.model,
+            choices: chunk.choices?.map { choice in
+                .init(
+                    delta: .init(role: nil, content: choice.text),
+                    index: choice.index,
+                    finish_reason: choice.finish_reason,
+                    message: nil
+                )
+            }
+        )
+    }
+
+    /// Parses one line of the event stream.
     static func parseChatCompletionsStreamLine(
         _ line: String
     ) throws -> ResponseStream<ChatCompletionsStreamDataChunk>.LineContent {
         guard let payload = SSELine.payload(of: line) else { return .init(chunk: nil, done: false) }
         if payload == "[DONE]" { return .init(chunk: nil, done: true) }
+        if let message = APIErrorPayload.message(in: payload) {
+            throw Error.apiError(message)
+        }
         let chunk = try JSONDecoder().decode(
             ChatCompletionsStreamDataChunk.self,
             from: Data(payload.utf8)
@@ -252,7 +306,7 @@ extension OpenAIService {
         struct Choice: Codable, Equatable {
             var message: Message
             var index: Int
-            var finish_reason: String
+            var finish_reason: String?
         }
 
         struct Usage: Codable, Equatable {
@@ -262,9 +316,9 @@ extension OpenAIService {
         }
 
         var id: String?
-        var object: String
-        var model: String
-        var usage: Usage
+        var object: String?
+        var model: String?
+        var usage: Usage?
         var choices: [Choice]
     }
 
@@ -305,7 +359,7 @@ extension OpenAIService {
         return ([request.systemPrompt] + prompts.map(\.content)).joined(separator: "\n\n")
     }
 
-    func sendPrompt(_ prompt: String) async throws -> ResponseStream<CompletionsStreamDataChunk> {
+    func sendPrompt(_ prompt: String) async throws -> ResponseStream<ChatCompletionsStreamDataChunk> {
         let requestBody = CompletionRequestBody(
             model: modelName,
             prompt: prompt,
@@ -323,27 +377,51 @@ extension OpenAIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
-
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
-        }
-
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try Self.asChatChunk(Self.parseCompletionsBody($0, url: url)) },
+            parseLine: { line in
+                let content = try Self.parseCompletionsStreamLine(line)
+                return .init(chunk: content.chunk.map(Self.asChatChunk), done: content.done)
             }
-            throw Error.otherError(text)
-        }
-
-        return ResponseStream(result: result, lineExtractor: Self.parseCompletionsStreamLine)
+        )
     }
 
-    /// Parses one line of the event stream, or a whole non-streaming JSON body.
+    static func parseCompletionsBody(
+        _ text: String,
+        url: URL
+    ) throws -> CompletionsStreamDataChunk {
+        if let message = APIErrorPayload.message(in: text) {
+            throw Error.apiError(message)
+        }
+        do {
+            let body = try JSONDecoder().decode(CompletionResponseBody.self, from: Data(text.utf8))
+            return CompletionsStreamDataChunk(
+                id: body.id,
+                object: body.object,
+                model: body.model,
+                choices: body.choices.map {
+                    .init(text: $0.text, index: $0.index, finish_reason: $0.finish_reason)
+                }
+            )
+        } catch let error as Error {
+            throw error
+        } catch {
+            throw Error.otherError(CompletionHTTP.parseFailureMessage(url: url))
+        }
+    }
+
+    /// Parses one line of the event stream.
     static func parseCompletionsStreamLine(
         _ line: String
     ) throws -> ResponseStream<CompletionsStreamDataChunk>.LineContent {
         guard let payload = SSELine.payload(of: line) else { return .init(chunk: nil, done: false) }
         if payload == "[DONE]" { return .init(chunk: nil, done: true) }
+        if let message = APIErrorPayload.message(in: payload) {
+            throw Error.apiError(message)
+        }
         let chunk = try JSONDecoder().decode(CompletionsStreamDataChunk.self, from: Data(payload.utf8))
         return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
     }
@@ -394,7 +472,7 @@ extension OpenAIService {
         struct Choice: Codable, Equatable {
             var text: String
             var index: Int
-            var finish_reason: String
+            var finish_reason: String?
         }
 
         struct Usage: Codable, Equatable {
@@ -403,9 +481,9 @@ extension OpenAIService {
         }
 
         var id: String?
-        var object: String
-        var model: String
-        var usage: Usage
+        var object: String?
+        var model: String?
+        var usage: Usage?
         var choices: [Choice]
     }
 

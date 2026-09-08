@@ -1,6 +1,7 @@
 import CopilotForXcodeKit
 import Foundation
 import AIModel
+import Logger
 
 public actor MistralFIMService {
     let url: URL
@@ -77,6 +78,7 @@ extension MistralFIMService {
             var delta: Delta?
             var text: String?
             var finish_reason: String?
+            var message: OpenAIService.Message?
         }
 
         var id: String?
@@ -115,33 +117,55 @@ extension MistralFIMService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         let (result, response) = try await URLSession.shared.bytes(for: request)
-        
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
-        }
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try Self.parseBody($0, url: url) },
+            parseLine: Self.parseStreamLine
+        )
+    }
 
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
-            }
-            throw Error.otherError(text)
+    static func parseBody(_ text: String, url: URL) throws -> StreamDataChunk {
+        if let message = APIErrorPayload.message(in: text) {
+            throw Error.otherError(message)
         }
+        do {
+            var chunk = try JSONDecoder().decode(StreamDataChunk.self, from: Data(text.utf8))
+            if let choice = chunk.choices?.first,
+               choice.delta?.content == nil,
+               choice.text == nil,
+               let content = choice.message?.content
+            {
+                chunk.choices = [
+                    .init(
+                        index: choice.index,
+                        delta: .init(role: choice.message?.role, content: content),
+                        text: content,
+                        finish_reason: choice.finish_reason ?? "stop",
+                        message: choice.message
+                    ),
+                ]
+            }
+            return chunk
+        } catch let error as Error {
+            throw error
+        } catch {
+            throw Error.otherError(CompletionHTTP.parseFailureMessage(url: url))
+        }
+    }
 
-        return ResponseStream(result: result) {
-            var text = $0
-            if text.hasPrefix("data: ") {
-                text = String(text.dropFirst(6))
-            }
-            do {
-                let chunk = try JSONDecoder().decode(
-                    StreamDataChunk.self,
-                    from: text.data(using: .utf8) ?? Data()
-                )
-                return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
-            } catch {
-                print(error)
-                throw error
-            }
+    static func parseStreamLine(_ line: String) throws -> ResponseStream<StreamDataChunk>.LineContent {
+        guard let payload = SSELine.payload(of: line) else {
+            return .init(chunk: nil, done: false)
+        }
+        if payload == "[DONE]" { return .init(chunk: nil, done: true) }
+        do {
+            let chunk = try JSONDecoder().decode(StreamDataChunk.self, from: Data(payload.utf8))
+            return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
+        } catch {
+            Logger.service.error(error)
+            throw error
         }
     }
 }

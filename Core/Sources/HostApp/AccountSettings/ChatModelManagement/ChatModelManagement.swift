@@ -87,6 +87,9 @@ struct ChatModelManagement: AIModelManagement {
 
             case let .removeModel(id):
                 state.models.remove(id: id)
+                if userDefaults.value(for: \.customSuggestionModelId) == id {
+                    userDefaults.set("", for: \.customSuggestionModelId)
+                }
                 persist(state)
                 return .none
 

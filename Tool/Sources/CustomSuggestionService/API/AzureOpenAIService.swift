@@ -42,7 +42,12 @@ public actor AzureOpenAIService {
 }
 
 extension AzureOpenAIService: CodeCompletionServiceType {
-    func getCompletion(_ request: PromptStrategy) async throws -> AsyncStream<String> {
+    typealias CompletionSequence = AsyncThrowingCompactMapSequence<
+        ResponseStream<OpenAIService.ChatCompletionsStreamDataChunk>,
+        String
+    >
+
+    func getCompletion(_ request: PromptStrategy) async throws -> CompletionSequence {
         switch endpoint {
         case .chatCompletion:
             let messages = createMessages(from: request)
@@ -50,12 +55,12 @@ extension AzureOpenAIService: CodeCompletionServiceType {
                 ($0.content, $0.role.rawValue)
             })
             let result = try await sendMessages(messages)
-            return result.compactMap { $0.choices?.first?.delta?.content }.eraseToStream()
+            return result.compactMap { $0.choices?.first?.delta?.content }
         case .completion:
             let prompt = createPrompt(from: request)
             CodeCompletionLogger.logger.logPrompt([(prompt, "user")])
             let result = try await sendPrompt(prompt)
-            return result.compactMap { $0.choices?.first?.text }.eraseToStream()
+            return result.compactMap { $0.choices?.first?.delta?.content }
         }
     }
 }
@@ -102,34 +107,13 @@ extension AzureOpenAIService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "api-key")
         let (result, response) = try await URLSession.shared.bytes(for: request)
-
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
-        }
-
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
-            }
-            throw Error.otherError(text)
-        }
-
-        return ResponseStream(result: result) {
-            var text = $0
-            if text.hasPrefix("data: ") {
-                text = String(text.dropFirst(6))
-            }
-            do {
-                let chunk = try JSONDecoder().decode(
-                    OpenAIService.ChatCompletionsStreamDataChunk.self,
-                    from: text.data(using: .utf8) ?? Data()
-                )
-                return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
-            } catch {
-                print(error)
-                throw error
-            }
-        }
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try OpenAIService.parseChatCompletionsBody($0, url: url) },
+            parseLine: OpenAIService.parseChatCompletionsStreamLine
+        )
     }
 
     func createPrompt(from request: PromptStrategy) -> String {
@@ -143,7 +127,7 @@ extension AzureOpenAIService {
 
     func sendPrompt(
         _ prompt: String
-    ) async throws -> ResponseStream<OpenAIService.CompletionsStreamDataChunk> {
+    ) async throws -> ResponseStream<OpenAIService.ChatCompletionsStreamDataChunk> {
         let requestBody = OpenAIService.CompletionRequestBody(
             model: modelName,
             prompt: prompt,
@@ -160,34 +144,16 @@ extension AzureOpenAIService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "api-key")
         let (result, response) = try await URLSession.shared.bytes(for: request)
-
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
-        }
-
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try OpenAIService.asChatChunk(OpenAIService.parseCompletionsBody($0, url: url)) },
+            parseLine: { line in
+                let content = try OpenAIService.parseCompletionsStreamLine(line)
+                return .init(chunk: content.chunk.map(OpenAIService.asChatChunk), done: content.done)
             }
-            throw Error.otherError(text)
-        }
-
-        return ResponseStream(result: result) {
-            var text = $0
-            if text.hasPrefix("data: ") {
-                text = String(text.dropFirst(6))
-            }
-            do {
-                let chunk = try JSONDecoder().decode(
-                    OpenAIService.CompletionsStreamDataChunk.self,
-                    from: text.data(using: .utf8) ?? Data()
-                )
-                return .init(chunk: chunk, done: chunk.choices?.first?.finish_reason != nil)
-            } catch {
-                print(error)
-                throw error
-            }
-        }
+        )
     }
 
     func countToken(_ message: Message) -> Int {

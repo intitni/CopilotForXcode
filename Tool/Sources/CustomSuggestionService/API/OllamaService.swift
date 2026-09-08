@@ -209,25 +209,29 @@ extension OllamaService {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let (result, response) = try await URLSession.shared.bytes(for: request)
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try Self.parseChunkBody($0, url: url) },
+            parseLine: Self.parseStreamLine
+        )
+    }
 
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
+    static func parseChunkBody(_ text: String, url: URL) throws -> ChatCompletionResponseChunk {
+        do {
+            return try JSONDecoder().decode(ChatCompletionResponseChunk.self, from: Data(text.utf8))
+        } catch {
+            throw Error.otherError(CompletionHTTP.parseFailureMessage(url: url))
         }
+    }
 
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
-            }
-            throw Error.otherError(text)
-        }
-
-        return ResponseStream(result: result) {
-            let chunk = try JSONDecoder().decode(
-                ChatCompletionResponseChunk.self,
-                from: $0.data(using: .utf8) ?? Data()
-            )
-            return .init(chunk: chunk, done: chunk.done)
-        }
+    static func parseStreamLine(_ line: String) throws -> ResponseStream<ChatCompletionResponseChunk>.LineContent {
+        let chunk = try JSONDecoder().decode(
+            ChatCompletionResponseChunk.self,
+            from: line.data(using: .utf8) ?? Data()
+        )
+        return .init(chunk: chunk, done: chunk.done)
     }
 }
 
@@ -291,25 +295,13 @@ extension OllamaService {
         }
         
         let (result, response) = try await URLSession.shared.bytes(for: request)
-
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
-        }
-
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
-            }
-            throw Error.otherError(text)
-        }
-
-        return ResponseStream(result: result) {
-            let chunk = try JSONDecoder().decode(
-                ChatCompletionResponseChunk.self,
-                from: $0.data(using: .utf8) ?? Data()
-            )
-            return .init(chunk: chunk, done: chunk.done)
-        }
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try Self.parseChunkBody($0, url: url) },
+            parseLine: Self.parseStreamLine
+        )
     }
 
     func countToken(_ message: Message) -> Int {

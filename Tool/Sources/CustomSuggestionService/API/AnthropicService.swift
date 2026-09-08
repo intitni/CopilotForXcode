@@ -1,6 +1,7 @@
 import CopilotForXcodeKit
 import Foundation
 import AIModel
+import Logger
 
 public actor AnthropicService {
     let url: URL
@@ -51,13 +52,18 @@ public actor AnthropicService {
 // MARK: - CodeCompletionServiceType Implementation
 
 extension AnthropicService: CodeCompletionServiceType {
-    func getCompletion(_ request: PromptStrategy) async throws -> AsyncStream<String> {
+    typealias CompletionSequence = AsyncThrowingCompactMapSequence<
+        ResponseStream<StreamResponse>,
+        String
+    >
+
+    func getCompletion(_ request: PromptStrategy) async throws -> CompletionSequence {
         let (messages, systemPrompt) = createMessages(from: request)
         CodeCompletionLogger.logger.logPrompt(messages.map {
             ($0.content, $0.role.rawValue)
         })
         let result = try await sendMessages(messages, systemPrompt: systemPrompt)
-        return result.compactMap { $0.delta?.text }.eraseToStream()
+        return result.compactMap { $0.delta?.text }
     }
 }
 
@@ -138,48 +144,57 @@ extension AnthropicService {
         request.httpBody = try encoder.encode(requestBody)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try Self.parseMessageBody($0, url: url) },
+            parseLine: Self.parseStreamLine
+        )
+    }
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw CancellationError()
+    static func parseMessageBody(_ text: String, url: URL) throws -> StreamResponse {
+        if let message = APIErrorPayload.message(in: text) {
+            throw Error.apiError(APIError(type: "error", message: message, code: nil))
         }
-
-        guard httpResponse.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
-            }
-            throw Error.otherError(text)
+        do {
+            let body = try JSONDecoder().decode(StreamResponse.self, from: Data(text.utf8))
+            let joined = (body.content ?? []).map(\.text).joined()
+            return StreamResponse(
+                type: body.type ?? "message",
+                delta: .init(text: joined, type: "text"),
+                index: nil,
+                content: body.content
+            )
+        } catch let error as Error {
+            throw error
+        } catch {
+            throw Error.otherError(CompletionHTTP.parseFailureMessage(url: url))
         }
+    }
 
-        return ResponseStream(result: result) {
-            var text = $0
-
-            if text.hasPrefix("event: ") {
-                return .init(chunk: StreamResponse(), done: false)
+    static func parseStreamLine(_ line: String) throws -> ResponseStream<StreamResponse>.LineContent {
+        guard let payload = SSELine.payload(of: line) else {
+            return .init(chunk: nil, done: false)
+        }
+        struct ErrorEvent: Decodable {
+            var type: String?
+            var error: APIError?
+        }
+        if let event = try? JSONDecoder().decode(ErrorEvent.self, from: Data(payload.utf8)),
+           event.type == "error"
+        {
+            if let error = event.error {
+                throw Error.apiError(error)
             }
-
-            if text.hasPrefix("data: ") {
-                text = String(text.dropFirst(6))
-
-                guard !text.trimmingCharacters(in: .whitespaces).isEmpty else {
-                    return .init(chunk: StreamResponse(), done: false)
-                }
-
-                do {
-                    let chunk = try JSONDecoder().decode(
-                        StreamResponse.self,
-                        from: text.data(using: .utf8) ?? Data()
-                    )
-                    return .init(
-                        chunk: chunk,
-                        done: chunk.type == "message_stop"
-                    )
-                } catch {
-                    print("Error decoding chunk: \(error)")
-                    throw error
-                }
-            }
-
-            return .init(chunk: StreamResponse(), done: false)
+            throw Error.otherError("Unknown error.")
+        }
+        do {
+            let chunk = try JSONDecoder().decode(StreamResponse.self, from: Data(payload.utf8))
+            return .init(chunk: chunk, done: chunk.type == "message_stop")
+        } catch {
+            Logger.service.error("Error decoding chunk: \(error)")
+            throw error
         }
     }
 }

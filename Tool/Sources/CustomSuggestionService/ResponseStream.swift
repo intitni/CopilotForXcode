@@ -16,6 +16,13 @@ struct ResponseStream<Chunk>: AsyncSequence {
 
     let stream: Stream
 
+    init(single chunk: Chunk) {
+        stream = AsyncThrowingStream { continuation in
+            continuation.yield(chunk)
+            continuation.finish()
+        }
+    }
+
     init(result: URLSession.AsyncBytes, lineExtractor: @escaping (String) throws -> LineContent) {
         stream = AsyncThrowingStream<Chunk, Error> { continuation in
             let task = Task {

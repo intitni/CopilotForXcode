@@ -118,19 +118,30 @@ extension OpenAIResponsesService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
+        return try await CompletionHTTP.makeStream(
+            result: result,
+            response: response,
+            mapError: { Error.otherError($0) },
+            parseBody: { try Self.parseNonStreamingBody($0, url: url) },
+            parseLine: Self.parseStreamLine
+        )
+    }
 
-        guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
+    static func parseNonStreamingBody(_ text: String, url: URL) throws -> StreamChunk {
+        if let message = APIErrorPayload.message(in: text) {
+            throw Error.apiError(message)
         }
-
-        guard response.statusCode == 200 else {
-            let text = try await result.lines.reduce(into: "") { partialResult, current in
-                partialResult += current
+        do {
+            let object = try JSONDecoder().decode(ResponseObject.self, from: Data(text.utf8))
+            if let message = object.error?.message {
+                throw Error.apiError(message)
             }
-            throw Error.otherError(text)
+            return StreamChunk(text: object.outputText)
+        } catch let error as Error {
+            throw error
+        } catch {
+            throw Error.otherError(CompletionHTTP.parseFailureMessage(url: url))
         }
-
-        return ResponseStream(result: result, lineExtractor: Self.parseStreamLine)
     }
 }
 
@@ -197,10 +208,13 @@ extension OpenAIResponsesService {
         }
     }
 
-    /// Parses one line of the event stream, or a whole non-streaming JSON body.
+    /// Parses one line of the event stream.
     static func parseStreamLine(_ line: String) throws -> ResponseStream<StreamChunk>.LineContent {
         guard let payload = SSELine.payload(of: line) else { return .init(chunk: nil, done: false) }
         if payload == "[DONE]" { return .init(chunk: nil, done: true) }
+        if let message = APIErrorPayload.message(in: payload) {
+            throw Error.apiError(message)
+        }
         let event = try JSONDecoder().decode(StreamEvent.self, from: Data(payload.utf8))
         switch event.type {
         case "response.output_text.delta":

@@ -1,4 +1,5 @@
 import CopilotForXcodeKit
+import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
 import Preferences
 import AIModel
@@ -11,7 +12,22 @@ actor CustomSuggestionCoordinator {
         case fimModel(FIMModel)
     }
 
+    enum SelectionError: Swift.Error, LocalizedError {
+        case modelMissing(String)
+
+        var errorDescription: String? {
+            switch self {
+            case let .modelMissing(id):
+                if id.isEmpty {
+                    return "No suggestion model is selected. Pick one in Service › Custom Model."
+                }
+                return "Selected suggestion model \"\(id)\" no longer exists. Pick one in Service › Custom Model."
+            }
+        }
+    }
+
     var onGoingTask: Task<[CodeSuggestion], Error>?
+    var lastNoticeDate: Date?
 
     func cancelRequest() {
         onGoingTask?.cancel()
@@ -40,11 +56,11 @@ actor CustomSuggestionCoordinator {
                     )
 
                     if strategy.shouldSkip {
-                        throw CancellationError()
+                        return [CodeSuggestion]()
                     }
 
                     let service = CodeCompletionService()
-                    let model = getModel()
+                    let model = try getModel()
                     let prompt = strategy.createPrompt()
                     let postProcessor = strategy.createRawSuggestionPostProcessor()
                     let stopStream = strategy.createStreamStopStrategy(model: model)
@@ -118,7 +134,7 @@ actor CustomSuggestionCoordinator {
                         }
                 } catch {
                     CodeCompletionLogger.logger.error(error)
-                    throw error
+                    throw mapUserFacingError(error)
                 }
             }
         }
@@ -126,13 +142,15 @@ actor CustomSuggestionCoordinator {
         return try await task.value
     }
 
-    func getModel() -> Model {
+    func getModel() throws -> Model {
         let id = UserDefaults.shared.value(for: \.customSuggestionModelId)
         let models = UserDefaults.shared.value(for: \.chatModels)
         if let existedModel = models.first(where: { $0.id == id }) {
             return .chatModel(existedModel)
         }
-        let type = CustomModelType(rawValue: id) ?? .default
+        guard let type = CustomModelType(rawValue: id) else {
+            throw SelectionError.modelMissing(id)
+        }
         switch type {
         case .completionModel:
             return .completionModel(UserDefaults.shared.value(for: \.customSuggestionCompletionModel))
@@ -141,6 +159,18 @@ actor CustomSuggestionCoordinator {
         case .fimModel:
             return .fimModel(UserDefaults.shared.value(for: \.customSuggestionFIMModel))
         }
+    }
+
+    func mapUserFacingError(_ error: Swift.Error) -> Swift.Error {
+        if error is CancellationError { return error }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return error }
+        if error is SuggestionServiceError { return error }
+        let now = Date()
+        if let lastNoticeDate, now.timeIntervalSince(lastNoticeDate) < 30 {
+            return SuggestionServiceError.silent(error)
+        }
+        lastNoticeDate = now
+        return SuggestionServiceError.notice(error)
     }
 
     func getStrategy(

@@ -89,6 +89,8 @@ public final class CodeCompletionLogger {
     }
 
     public func error(_ error: Error) {
+        if error is CancellationError { return }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return }
         guard shouldLogToConsole else { return }
 
         let now = Date()

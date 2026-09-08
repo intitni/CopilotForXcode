@@ -1,6 +1,7 @@
 import CopilotForXcodeKit
 import Foundation
 import AIModel
+import Logger
 
 actor TabbyService {
     enum AuthorizationMode {
@@ -27,7 +28,7 @@ actor TabbyService {
 }
 
 extension TabbyService: CodeCompletionServiceType {
-    func getCompletion(_ request: PromptStrategy) async throws -> AsyncStream<String> {
+    func getCompletion(_ request: PromptStrategy) async throws -> AsyncThrowingStream<String, Swift.Error> {
         let prefix = request.prefix.joined()
         let suffix = request.suffix.joined()
         let requestBody = RequestBody(
@@ -44,12 +45,16 @@ extension TabbyService: CodeCompletionServiceType {
             (prefix, "prefix"),
             (suffix, "suffix"),
         ])
-        return AsyncStream<String> { continuation in
+        return AsyncThrowingStream<String, Swift.Error> { continuation in
             let task = Task {
-                let result = try await send(requestBody)
-                try Task.checkCancellation()
-                continuation.yield(result)
-                continuation.finish()
+                do {
+                    let result = try await send(requestBody)
+                    try Task.checkCancellation()
+                    continuation.yield(result)
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
             }
             continuation.onTermination = { _ in
                 task.cancel()
@@ -66,9 +71,9 @@ extension TabbyService {
         var errorDescription: String? {
             switch self {
             case let .serverError(message):
-                return "Server returned an error: \(message)"
+                return message
             case let .decodeError(error):
-                return "Failed to decode response body: \(error)"
+                return error.localizedDescription
             }
         }
     }
@@ -119,19 +124,20 @@ extension TabbyService {
         let (result, response) = try await URLSession.shared.data(for: request)
 
         guard let response = response as? HTTPURLResponse else {
-            throw CancellationError()
+            throw Error.serverError(CompletionHTTP.invalidResponseMessage())
         }
 
         guard response.statusCode == 200 else {
-            throw Error.serverError(String(data: result, encoding: .utf8) ?? "Unknown Error")
+            let text = String(data: result, encoding: .utf8) ?? ""
+            throw Error.serverError(CompletionHTTP.statusMessage(code: response.statusCode, body: text))
         }
 
         do {
             let body = try JSONDecoder().decode(ResponseBody.self, from: result)
             return body.choices.first?.text ?? ""
         } catch {
-            dump(error)
-            throw Error.decodeError(error)
+            Logger.service.error(error)
+            throw Error.serverError(CompletionHTTP.parseFailureMessage(url: url))
         }
     }
 }

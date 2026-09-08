@@ -70,9 +70,6 @@ extension URLRequest {
 enum SSELine {
     /// The payload of a stream line, or nil for lines that carry no data
     /// (blank lines, `event:` / `id:` / `retry:` lines and comments).
-    ///
-    /// A line without the `data:` prefix is returned as is, so a non-streaming JSON body can be
-    /// handled by the same parser.
     static func payload(of line: String) -> String? {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return nil }
@@ -83,5 +80,84 @@ enum SSELine {
             return String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespaces)
         }
         return trimmed
+    }
+}
+
+/// Shared HTTP handling for completion `URLSession.bytes` calls.
+enum CompletionHTTP {
+    static func collectBody(_ bytes: URLSession.AsyncBytes) async throws -> String {
+        try await bytes.lines.reduce(into: "") { partial, line in
+            if !partial.isEmpty { partial += "\n" }
+            partial += line
+        }
+    }
+
+    static func isEventStream(_ response: HTTPURLResponse) -> Bool {
+        contentType(response).localizedCaseInsensitiveContains("text/event-stream")
+    }
+
+    static func isNDJSON(_ response: HTTPURLResponse) -> Bool {
+        contentType(response).localizedCaseInsensitiveContains("ndjson")
+    }
+
+    /// Pretty-printed JSON is multiple lines and must not go through `ResponseStream`.
+    /// Ollama streams NDJSON, which is also line-based.
+    static func shouldParseAsSingleBody(_ response: HTTPURLResponse) -> Bool {
+        !isEventStream(response) && !isNDJSON(response)
+    }
+
+    static func statusMessage(code: Int, body: String) -> String {
+        "HTTP \(code): \(String(body.prefix(200)))"
+    }
+
+    static func parseFailureMessage(url: URL) -> String {
+        "Cannot parse response from \(url.absoluteString)"
+    }
+
+    static func invalidResponseMessage() -> String {
+        "The server returned an invalid response."
+    }
+
+    static func makeStream<Chunk>(
+        result: URLSession.AsyncBytes,
+        response: URLResponse,
+        mapError: (String) -> Swift.Error,
+        parseBody: (String) throws -> Chunk,
+        parseLine: @escaping (String) throws -> ResponseStream<Chunk>.LineContent
+    ) async throws -> ResponseStream<Chunk> {
+        guard let http = response as? HTTPURLResponse else {
+            throw mapError(invalidResponseMessage())
+        }
+        if http.statusCode != 200 {
+            let body = try await collectBody(result)
+            throw mapError(statusMessage(code: http.statusCode, body: body))
+        }
+        if shouldParseAsSingleBody(http) {
+            let body = try await collectBody(result)
+            return ResponseStream(single: try parseBody(body))
+        }
+        return ResponseStream(result: result, lineExtractor: parseLine)
+    }
+
+    private static func contentType(_ response: HTTPURLResponse) -> String {
+        response.value(forHTTPHeaderField: "Content-Type") ?? ""
+    }
+}
+
+enum APIErrorPayload {
+    struct Envelope: Decodable {
+        struct Body: Decodable {
+            var message: String
+            var type: String?
+            var code: String?
+        }
+
+        var error: Body
+    }
+
+    static func message(in payload: String) -> String? {
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: Data(payload.utf8))
+        else { return nil }
+        return envelope.error.message
     }
 }

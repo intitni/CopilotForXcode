@@ -1,4 +1,5 @@
 import ChatService
+import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
 import OpenAIService
 import SuggestionBasic
@@ -29,6 +30,7 @@ struct PresentInWindowSuggestionPresenter {
     func presentError(_ error: Error) {
         if error is CancellationError { return }
         if let urlError = error as? URLError, urlError.code == URLError.cancelled { return }
+        if case .silent? = error as? SuggestionServiceError { return }
         Task { @MainActor in
             let controller = Service.shared.guiController.widgetController
             controller.presentError(error.localizedDescription)
