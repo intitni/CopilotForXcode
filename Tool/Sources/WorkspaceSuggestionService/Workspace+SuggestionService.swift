@@ -55,6 +55,12 @@ public extension Workspace {
 
         guard let suggestionService else { throw SuggestionFeatureDisabledError() }
         let content = editor.lines.joined(separator: "")
+        let relevantCodeSnippets = SuggestionContextCollector.shared.collectSnippets(
+            for: fileURL,
+            lines: editor.lines,
+            cursorPosition: editor.cursorPosition,
+            workspace: self
+        )
         let completions = try await suggestionService.getSuggestions(
             .init(
                 fileURL: fileURL,
@@ -67,7 +73,7 @@ public extension Workspace {
                 tabSize: editor.tabSize,
                 indentSize: editor.indentSize,
                 usesTabsForIndentation: editor.usesTabsForIndentation,
-                relevantCodeSnippets: []
+                relevantCodeSnippets: relevantCodeSnippets
             ),
             workspaceInfo: .init(workspaceURL: workspaceURL, projectURL: projectRootURL)
         )

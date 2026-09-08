@@ -11,8 +11,19 @@ struct DefaultRawSuggestionPostProcessingStrategy: RawSuggestionPostProcessingSt
     func postProcess(rawSuggestion: String, infillPrefix: String, suffix: [String]) -> String {
         var suggestion = extractSuggestion(from: rawSuggestion)
         removePrefix(from: &suggestion, infillPrefix: infillPrefix)
+        removeDuplicatedIndentation(from: &suggestion, infillPrefix: infillPrefix)
         removeSuffix(from: &suggestion, suffix: suffix)
         return infillPrefix + suggestion
+    }
+
+    /// Models like to restate the indentation of the line they continue. When the prefix already
+    /// ends with whitespace, leading spaces or tabs in the completion would only double the gap,
+    /// and they make Tab-to-accept look like indentation typing.
+    func removeDuplicatedIndentation(from suggestion: inout String, infillPrefix: String) {
+        guard let last = infillPrefix.last, last == " " || last == "\t" else { return }
+        while let first = suggestion.first, first == " " || first == "\t" {
+            suggestion.removeFirst()
+        }
     }
 
     func extractSuggestion(from response: String) -> String {

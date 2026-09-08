@@ -26,125 +26,86 @@ actor CustomSuggestionCoordinator {
         }
     }
 
-    var onGoingTask: Task<[CodeSuggestion], Error>?
+    /// Everything a completion round derives from the request and the preferences.
+    struct Round {
+        let request: SuggestionRequest
+        let prompt: PromptStrategy
+        let postProcessor: RawSuggestionPostProcessingStrategy
+        let stopStream: StreamStopStrategy
+        let model: Model
+        let maxLines: Int
+
+        /// Turns raw model output into the suggestion shown to the user; nil when it is blank.
+        func makeSuggestion(from rawSuggestion: String, id: String) -> CodeSuggestion? {
+            if rawSuggestion.allSatisfy({ $0.isWhitespace || $0.isNewline }) { return nil }
+            let suggestionText = postProcessor
+                .postProcess(
+                    rawSuggestion: rawSuggestion,
+                    infillPrefix: prompt.suggestionPrefix.prependingValue,
+                    suffix: prompt.suffix
+                )
+                .keepLines(count: maxLines)
+                .removeTrailingNewlinesAndWhitespace()
+
+            return CodeSuggestion(
+                id: id,
+                text: suggestionText,
+                position: request.cursorPosition,
+                range: .init(
+                    start: .init(
+                        line: request.cursorPosition.line,
+                        character: 0
+                    ),
+                    end: request.cursorPosition
+                )
+            )
+        }
+    }
+
+    /// Minimum interval between two partial emissions while streaming.
+    static let partialEmitInterval: TimeInterval = 0.05
+
+    /// Cancels the in-flight round, whichever entry point started it.
+    private var cancelOnGoingRound: (() -> Void)?
     var lastNoticeDate: Date?
 
     func cancelRequest() {
-        onGoingTask?.cancel()
-        onGoingTask = nil
+        cancelOnGoingRound?()
+        cancelOnGoingRound = nil
     }
 
     func getSuggestions(
         _ request: SuggestionRequest,
         workspace: WorkspaceInfo
     ) async throws -> [CodeSuggestion] {
-        onGoingTask?.cancel()
-        onGoingTask = nil
-        let snapshot = PreferenceSnapshot(
-            modelId: UserDefaults.shared.value(for: \.customSuggestionModelId),
-            chatModels: UserDefaults.shared.value(for: \.chatModels),
-            strategyId: UserDefaults.shared.value(for: \.customSuggestionRequestStrategyId)
-        )
+        cancelRequest()
+        let snapshot = Self.currentSnapshot()
         let task = Task {
             try await CodeCompletionLogger.$logger.withValue(.init(request: request)) {
                 do {
-                    let lines = request.content.breakLines()
-                    let (previousLines, nextLines) = Self.split(
-                        code: request.content,
-                        lines: lines,
-                        at: request.cursorPosition
-                    )
-                    let strategy = getStrategy(
-                        sourceRequest: request,
-                        prefix: previousLines,
-                        suffix: nextLines,
-                        snapshot: snapshot
-                    )
-
-                    if strategy.shouldSkip {
+                    guard let round = try prepareRound(request, snapshot: snapshot) else {
                         return [CodeSuggestion]()
                     }
 
-                    let service = CodeCompletionService()
-                    let model = try getModel(snapshot)
-                    let prompt = strategy.createPrompt()
-                    let postProcessor = strategy.createRawSuggestionPostProcessor()
-                    let stopStream = strategy.createStreamStopStrategy(model: model)
-
-                    let suggestedCodeSnippets: [String]
-
-                    switch model {
-                    case let .chatModel(model):
-                        CodeCompletionLogger.logger.logModel(model)
-                        suggestedCodeSnippets = try await service.getCompletions(
-                            prompt,
-                            streamStopStrategy: stopStream,
-                            model: model,
-                            count: 1
-                        )
-                    case let .completionModel(model):
-                        CodeCompletionLogger.logger.logModel(model)
-                        suggestedCodeSnippets = try await service.getCompletions(
-                            prompt,
-                            streamStopStrategy: stopStream,
-                            model: model,
-                            count: 1
-                        )
-                    case let .tabbyModel(model):
-                        CodeCompletionLogger.logger.logModel(model)
-                        suggestedCodeSnippets = try await service.getCompletions(
-                            prompt,
-                            streamStopStrategy: stopStream,
-                            model: model,
-                            count: 1
-                        )
-                    case let .fimModel(model):
-                        CodeCompletionLogger.logger.logModel(model)
-                        suggestedCodeSnippets = try await service.getCompletions(
-                            prompt,
-                            streamStopStrategy: stopStream,
-                            model: model,
-                            count: 1
-                        )
-                    }
+                    let suggestedCodeSnippets = try await CodeCompletionService().getCompletions(
+                        round.prompt,
+                        streamStopStrategy: round.stopStream,
+                        model: round.model,
+                        count: 1
+                    )
 
                     CodeCompletionLogger.logger.finish()
 
-                    return suggestedCodeSnippets
-                        .filter { !$0.allSatisfy { $0.isWhitespace || $0.isNewline } }
-                        .map {
-                            let suggestionText = postProcessor
-                                .postProcess(
-                                    rawSuggestion: $0,
-                                    infillPrefix: prompt.suggestionPrefix.prependingValue,
-                                    suffix: prompt.suffix
-                                )
-                                .keepLines(
-                                    count: UserDefaults.shared
-                                        .value(for: \.customSuggestionMaxLines)
-                                )
-                                .removeTrailingNewlinesAndWhitespace()
-
-                            return CodeSuggestion(
-                                id: UUID().uuidString,
-                                text: suggestionText,
-                                position: request.cursorPosition,
-                                range: .init(
-                                    start: .init(
-                                        line: request.cursorPosition.line,
-                                        character: 0
-                                    ),
-                                    end: request.cursorPosition
-                                )
-                            )
-                        }
+                    return suggestedCodeSnippets.compactMap {
+                        round.makeSuggestion(from: $0, id: UUID().uuidString)
+                    }
                 } catch {
                     CodeCompletionLogger.logger.error(error)
                     throw mapUserFacingError(error)
                 }
             }
         }
-        onGoingTask = task
+        cancelOnGoingRound = { task.cancel() }
         return try await withTaskCancellationHandler {
             try await task.value
         } onCancel: {
@@ -152,10 +113,116 @@ actor CustomSuggestionCoordinator {
         }
     }
 
+    /// Streams the round: partial suggestions (same id, growing text) at most every
+    /// ``partialEmitInterval``, then the final one. Blank partials are skipped.
+    func streamSuggestions(
+        _ request: SuggestionRequest,
+        workspace: WorkspaceInfo
+    ) -> AsyncThrowingStream<[CodeSuggestion], Swift.Error> {
+        cancelRequest()
+        let snapshot = Self.currentSnapshot()
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                await CodeCompletionLogger.$logger.withValue(.init(request: request)) {
+                    do {
+                        guard let round = try prepareRound(request, snapshot: snapshot) else {
+                            continuation.finish()
+                            return
+                        }
+                        let id = UUID().uuidString
+                        let completion = try await CodeCompletionService().streamCompletion(
+                            round.prompt,
+                            streamStopStrategy: round.stopStream,
+                            model: round.model
+                        )
+
+                        var latest: String?
+                        var lastEmit = Date.distantPast
+                        for try await partial in completion {
+                            try Task.checkCancellation()
+                            latest = partial
+                            let now = Date()
+                            guard now.timeIntervalSince(lastEmit) >= Self.partialEmitInterval,
+                                  let suggestion = round.makeSuggestion(from: partial, id: id)
+                            else { continue }
+                            lastEmit = now
+                            continuation.yield([suggestion])
+                            CodeCompletionLogger.logger.logPartial()
+                        }
+                        try Task.checkCancellation()
+
+                        if let latest { CodeCompletionLogger.logger.logResponse(latest) }
+                        CodeCompletionLogger.logger.finish()
+
+                        let final = latest.flatMap { round.makeSuggestion(from: $0, id: id) }
+                        continuation.yield(final.map { [$0] } ?? [])
+                        continuation.finish()
+                    } catch {
+                        CodeCompletionLogger.logger.error(error)
+                        continuation.finish(throwing: mapUserFacingError(error))
+                    }
+                }
+            }
+            cancelOnGoingRound = { task.cancel() }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     struct PreferenceSnapshot {
         var modelId: String
         var chatModels: [ChatModel]
         var strategyId: String
+    }
+
+    static func currentSnapshot() -> PreferenceSnapshot {
+        PreferenceSnapshot(
+            modelId: UserDefaults.shared.value(for: \.customSuggestionModelId),
+            chatModels: UserDefaults.shared.value(for: \.chatModels),
+            strategyId: UserDefaults.shared.value(for: \.customSuggestionRequestStrategyId)
+        )
+    }
+
+    /// Nil when the strategy decides there is nothing to complete here.
+    func prepareRound(_ request: SuggestionRequest, snapshot: PreferenceSnapshot) throws -> Round? {
+        let lines = request.content.breakLines()
+        let (previousLines, nextLines) = Self.split(
+            code: request.content,
+            lines: lines,
+            at: request.cursorPosition
+        )
+        let strategy = getStrategy(
+            sourceRequest: request,
+            prefix: previousLines,
+            suffix: nextLines,
+            snapshot: snapshot
+        )
+
+        if strategy.shouldSkip { return nil }
+
+        let model = try getModel(snapshot)
+        logModel(model)
+
+        return Round(
+            request: request,
+            prompt: strategy.createPrompt(),
+            postProcessor: strategy.createRawSuggestionPostProcessor(),
+            stopStream: strategy.createStreamStopStrategy(model: model),
+            model: model,
+            maxLines: UserDefaults.shared.value(for: \.customSuggestionMaxLines)
+        )
+    }
+
+    func logModel(_ model: Model) {
+        switch model {
+        case let .chatModel(model):
+            CodeCompletionLogger.logger.logModel(model)
+        case let .completionModel(model):
+            CodeCompletionLogger.logger.logModel(model)
+        case let .tabbyModel(model):
+            CodeCompletionLogger.logger.logModel(model)
+        case let .fimModel(model):
+            CodeCompletionLogger.logger.logModel(model)
+        }
     }
 
     func getModel(_ snapshot: PreferenceSnapshot) throws -> Model {
@@ -271,4 +338,3 @@ extension String {
         return String(text)
     }
 }
-

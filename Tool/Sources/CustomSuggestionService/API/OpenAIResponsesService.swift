@@ -245,6 +245,15 @@ extension OpenAIResponsesService {
         var reason: String?
     }
 
+    struct Usage: Decodable {
+        struct OutputTokensDetails: Decodable {
+            var reasoning_tokens: Int?
+        }
+
+        var output_tokens: Int?
+        var output_tokens_details: OutputTokensDetails?
+    }
+
     struct ResponseObject: Decodable {
         var id: String?
         var object: String?
@@ -252,6 +261,7 @@ extension OpenAIResponsesService {
         var output: [OutputItem]?
         var error: APIError?
         var incomplete_details: IncompleteDetails?
+        var usage: Usage? = nil
 
         var outputText: String {
             (output ?? [])
@@ -299,6 +309,12 @@ extension OpenAIResponsesService {
         case "response.output_text.delta":
             return .init(chunk: .init(text: event.delta), done: false)
         case "response.completed":
+            if let usage = event.response?.usage {
+                CodeCompletionLogger.logger.logUsage(
+                    outputTokens: usage.output_tokens,
+                    reasoningTokens: usage.output_tokens_details?.reasoning_tokens
+                )
+            }
             return .init(chunk: nil, done: true)
         case "response.incomplete":
             if event.response?.incomplete_details?.reason == "max_output_tokens" {

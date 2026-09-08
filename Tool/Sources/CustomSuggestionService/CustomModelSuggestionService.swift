@@ -1,3 +1,4 @@
+import BuiltinExtension
 import CopilotForXcodeKit
 import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
@@ -30,15 +31,40 @@ public final class CustomModelSuggestionService: SuggestionServiceType {
     ) async throws -> [CodeSuggestion] {
         do {
             return try await service.getSuggestions(request, workspace: workspace)
-        } catch is CancellationError {
-            return []
-        } catch let error as URLError where error.code == .cancelled {
-            return []
-        } catch let error as SuggestionServiceError {
-            throw error
         } catch {
-            throw SuggestionServiceError.notice(error)
+            if let mapped = Self.userFacingError(error) { throw mapped }
+            return []
         }
+    }
+
+    /// Cancellation ends the round quietly; everything else reaches the user the same way on
+    /// both entry points.
+    static func userFacingError(_ error: Swift.Error) -> Swift.Error? {
+        if error is CancellationError { return nil }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return nil }
+        if let error = error as? SuggestionServiceError { return error }
+        return SuggestionServiceError.notice(error)
     }
 }
 
+extension CustomModelSuggestionService: StreamingSuggestionServiceType {
+    public func streamSuggestions(
+        _ request: SuggestionRequest,
+        workspace: WorkspaceInfo
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Swift.Error> {
+        let upstream = await service.streamSuggestions(request, workspace: workspace)
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await partial in upstream {
+                        continuation.yield(partial)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: Self.userFacingError(error))
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+}

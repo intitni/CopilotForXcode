@@ -91,7 +91,7 @@ final class ChatAPIOptionsAndSemanticsTests: XCTestCase {
         XCTAssertNil(legacyDefaults.value(forKey: ChatModelAPIOptions.legacyReasoningEffortKey))
         XCTAssertEqual(
             ChatModelAPIOptions.stored(for: "model-2", defaults: legacyDefaults).api,
-            .chatCompletions
+            .responses
         )
     }
 
@@ -358,7 +358,7 @@ final class ChatAPIOptionsAndSemanticsTests: XCTestCase {
             apiKey: "sk",
             defaults: defaults
         )
-        XCTAssertEqual(options.api, .chatCompletions)
+        XCTAssertEqual(options.api, .responses)
         XCTAssertNil(options.reasoningEffort)
         XCTAssertEqual(options.reasoningTokenBudget, 1500)
         XCTAssertEqual(options.extraHeaders.map(\.name), ["X-Ok"])
@@ -373,7 +373,7 @@ final class ChatAPIOptionsAndSemanticsTests: XCTestCase {
             apiKey: "sk",
             defaults: defaults
         )
-        XCTAssertEqual(invalidStored.api, .chatCompletions)
+        XCTAssertEqual(invalidStored.api, .responses)
         XCTAssertNil(invalidStored.reasoningEffort)
         XCTAssertEqual(invalidStored.reasoningTokenBudget, 1500)
 
@@ -382,7 +382,7 @@ final class ChatAPIOptionsAndSemanticsTests: XCTestCase {
         legacyDefaults.set("not-an-api", forKey: ChatModelAPIOptions.legacyOpenAIAPIKey)
         legacyDefaults.set("not-an-effort", forKey: ChatModelAPIOptions.legacyReasoningEffortKey)
         let migrated = ChatModelAPIOptions.stored(for: "model-defaults", defaults: legacyDefaults)
-        XCTAssertEqual(migrated.api, .chatCompletions)
+        XCTAssertEqual(migrated.api, .responses)
         XCTAssertNil(migrated.reasoningEffort)
         XCTAssertNil(OpenAIChatAPI(rawValue: "not-an-api"))
         XCTAssertNil(ReasoningEffort(rawValue: "not-an-effort"))

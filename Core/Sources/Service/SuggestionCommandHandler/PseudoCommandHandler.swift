@@ -99,10 +99,12 @@ struct PseudoCommandHandler: CommandHandler {
         guard filespace.suggestionSourceSnapshot != snapshot else { return }
 
         do {
-            try await workspace.generateSuggestions(
+            try await workspace.generateSuggestionsStreaming(
                 forFileAt: fileURL,
                 editor: editor
-            )
+            ) { _ in
+                presenter.presentSuggestion(fileURL: fileURL)
+            }
             if let sourceEditor {
                 let editorContent = sourceEditor.getContent()
                 _ = filespace.validateSuggestions(
@@ -449,7 +451,12 @@ struct PseudoCommandHandler: CommandHandler {
                 if !UserDefaults.shared.value(for: \.openChatInBrowserInInAppBrowser) {
                     return false
                 }
+                #if canImport(BrowserChatTab)
                 return isFeatureAvailable(\.browserTab)
+                #else
+                // No in-app browser tab in this build: keep using the system browser.
+                return false
+                #endif
             }()
             guard let url = URL(string: urlString) else {
                 let alert = NSAlert()

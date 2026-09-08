@@ -244,7 +244,7 @@ struct ChatAPIOptionsPicker: View {
                 selection: Binding(
                     get: { currentOptions.api.rawValue },
                     set: { newValue in
-                        update { $0.api = OpenAIChatAPI(rawValue: newValue) ?? .chatCompletions }
+                        update { $0.api = OpenAIChatAPI(rawValue: newValue) ?? .responses }
                     }
                 ),
                 label: Text("OpenAI Endpoint")

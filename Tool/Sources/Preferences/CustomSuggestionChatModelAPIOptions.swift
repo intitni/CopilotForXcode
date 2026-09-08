@@ -1,6 +1,7 @@
 import Foundation
 
-/// Which OpenAI endpoint to call for chat models.
+/// Which OpenAI endpoint to call for chat models. Defaults to `/v1/responses`; models whose
+/// server only speaks `/v1/chat/completions` need the endpoint picker switched per model.
 public enum OpenAIChatAPI: String, Codable, CaseIterable, Equatable {
     /// `POST /v1/chat/completions`
     case chatCompletions
@@ -36,7 +37,7 @@ public struct ChatModelAPIOptions: Codable, Equatable {
     public var reasoningTokenBudget: Int
 
     public init(
-        api: OpenAIChatAPI = .chatCompletions,
+        api: OpenAIChatAPI = .responses,
         reasoningEffort: ReasoningEffort? = nil,
         reasoningTokenBudget: Int = 1500
     ) {
@@ -47,7 +48,7 @@ public struct ChatModelAPIOptions: Codable, Equatable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        api = try container.decodeIfPresent(OpenAIChatAPI.self, forKey: .api) ?? .chatCompletions
+        api = try container.decodeIfPresent(OpenAIChatAPI.self, forKey: .api) ?? .responses
         reasoningEffort = try container.decodeIfPresent(
             ReasoningEffort.self,
             forKey: .reasoningEffort
@@ -96,12 +97,12 @@ public struct ChatModelAPIOptions: Codable, Equatable {
     ) -> Bool {
         let oldAPI = defaults.value(forKey: legacyOpenAIAPIKey) as? String
         let oldEffort = defaults.value(forKey: legacyReasoningEffortKey) as? String
-        let hasNonDefaultAPI = oldAPI != nil && oldAPI != "chatCompletions"
+        let hasNonDefaultAPI = oldAPI != nil
         let hasNonDefaultEffort = !(oldEffort ?? "").isEmpty
         guard hasNonDefaultAPI || hasNonDefaultEffort else { return false }
 
         dict[modelId] = ChatModelAPIOptions(
-            api: OpenAIChatAPI(rawValue: oldAPI ?? "") ?? .chatCompletions,
+            api: OpenAIChatAPI(rawValue: oldAPI ?? "") ?? .responses,
             reasoningEffort: oldEffort.flatMap(ReasoningEffort.init(rawValue:))
         )
         defaults.set(nil, forKey: legacyOpenAIAPIKey)

@@ -176,7 +176,7 @@ final class TabToAcceptSuggestion {
             Logger.service.info("TabToAcceptSuggestion: Xcode not found")
             return .unchanged
         }
-        guard let editor = ThreadSafeAccessToXcodeInspector.shared.focusedEditor
+        guard ThreadSafeAccessToXcodeInspector.shared.focusedEditor != nil
         else {
             Logger.service.info("TabToAcceptSuggestion: No editor found")
             return .unchanged
@@ -194,12 +194,7 @@ final class TabToAcceptSuggestion {
             return .unchanged
         }
 
-        let editorContent = editor.getContent()
-
         let shouldAcceptSuggestion = Self.checkIfAcceptSuggestion(
-            lines: editorContent.lines,
-            cursorPosition: editorContent.cursorPosition,
-            codeMetadata: filespace.codeMetadata,
             presentingSuggestionText: presentingSuggestion.text
         )
 
@@ -243,39 +238,14 @@ final class TabToAcceptSuggestion {
 }
 
 extension TabToAcceptSuggestion {
-    static func checkIfAcceptSuggestion(
-        lines: [String],
-        cursorPosition: CursorPosition,
-        codeMetadata: FilespaceCodeMetadata,
-        presentingSuggestionText: String
-    ) -> Bool {
-        let line = cursorPosition.line
-        guard line >= 0, line < lines.endIndex else {
-            return true
-        }
-        let col = cursorPosition.character
-        let prefixEndIndex = lines[line].utf16.index(
-            lines[line].utf16.startIndex,
-            offsetBy: col,
-            limitedBy: lines[line].utf16.endIndex
-        ) ?? lines[line].utf16.endIndex
-        let prefix = String(lines[line][..<prefixEndIndex])
-        let contentAfterTab = {
-            let indentSize = codeMetadata.indentSize ?? 4
-            if codeMetadata.usesTabsForIndentation ?? false {
-                return prefix + "\t"
-            } else {
-                return prefix + String(repeating: " ", count: indentSize)
-            }
-        }()
-
-        // If entering a tab doesn't invalidate the suggestion, just let the user type the tab.
-        // else, accept the suggestion and discard the tab.
-        guard !presentingSuggestionText.hasPrefix(contentAfterTab) else {
-            Logger.service.info("TabToAcceptSuggestion: Space for tab")
-            return false
-        }
-        return true
+    /// Cursor-style acceptance: whenever a suggestion is presented, Tab accepts it.
+    ///
+    /// Upstream let the Tab through to Xcode when typing a tab would not invalidate the
+    /// suggestion, i.e. when its text still started with the line prefix plus one indent.
+    /// Custom-model completions often begin with whitespace, so that rule turned one Tab into
+    /// three; the editor content is no longer read for this decision either.
+    static func checkIfAcceptSuggestion(presentingSuggestionText: String) -> Bool {
+        !presentingSuggestionText.isEmpty
     }
 }
 

@@ -45,6 +45,38 @@ extension CodeCompletionServiceType {
             return result.filter { !$0.isEmpty }
         }
     }
+
+    /// Streams one completion while it is generated.
+    ///
+    /// Every element is the whole text received so far, already cut by stop words and the line
+    /// limit, minus a trailing fragment that could still turn out to be a stop word. The last
+    /// element is exactly what ``getCompletions(_:streamStopStrategy:count:)`` would return.
+    func streamCompletion(
+        _ request: PromptStrategy,
+        streamStopStrategy: StreamStopStrategy
+    ) -> AsyncThrowingStream<String, Swift.Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let limiter = StreamLineLimiter(strategy: streamStopStrategy)
+                    let stream = try await getCompletion(request)
+                    let result = try await feedCompletion(
+                        from: stream,
+                        stopWords: request.stopWords,
+                        limiter: limiter
+                    ) { partial in
+                        continuation.yield(partial)
+                    }
+                    try Task.checkCancellation()
+                    continuation.yield(result)
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
 }
 
 func collectCompletion<S: AsyncSequence>(
@@ -52,7 +84,19 @@ func collectCompletion<S: AsyncSequence>(
     stopWords: [String],
     limiter: StreamLineLimiter
 ) async throws -> String where S.Element == String {
+    try await feedCompletion(from: stream, stopWords: stopWords, limiter: limiter) { _ in }
+}
+
+/// Feeds `stream` into `limiter`, reporting the displayable text after every token, and returns
+/// the final text: cut at the first stop word, or where the limiter decided to stop.
+func feedCompletion<S: AsyncSequence>(
+    from stream: S,
+    stopWords: [String],
+    limiter: StreamLineLimiter,
+    onPartial: (String) -> Void
+) async throws -> String where S.Element == String {
     for try await response in stream {
+        if !response.isEmpty { CodeCompletionLogger.logger.logFirstToken() }
         let push = limiter.push(response)
         if let truncated = CompletionStopWords.truncatedPrefix(
             of: limiter.result,
@@ -63,8 +107,41 @@ func collectCompletion<S: AsyncSequence>(
         if case let .finish(result) = push {
             return result
         }
+        onPartial(CompletionStopWords.displayablePrefix(of: limiter.result, stopWords: stopWords))
     }
     return limiter.result
+}
+
+/// Type-erased ``CodeCompletionServiceType`` so the per-model dispatch can serve both the blocking
+/// and the streaming entry points. Errors and cancellation pass through unchanged.
+struct ErasedCompletionService: CodeCompletionServiceType {
+    typealias CompletionSequence = AsyncThrowingStream<String, Swift.Error>
+
+    let makeCompletion: (PromptStrategy) async throws -> CompletionSequence
+
+    init<Service: CodeCompletionServiceType>(_ service: Service) {
+        makeCompletion = { request in
+            let sequence = try await service.getCompletion(request)
+            return AsyncThrowingStream { continuation in
+                let task = Task {
+                    do {
+                        for try await element in sequence {
+                            try Task.checkCancellation()
+                            continuation.yield(element)
+                        }
+                        continuation.finish()
+                    } catch {
+                        continuation.finish(throwing: error)
+                    }
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        }
+    }
+
+    func getCompletion(_ request: PromptStrategy) async throws -> CompletionSequence {
+        try await makeCompletion(request)
+    }
 }
 
 public struct CodeCompletionService {
@@ -84,28 +161,15 @@ public struct CodeCompletionService {
         }
     }
 
-    public func getCompletions(
+    // MARK: Blocking
+
+    func getCompletions(
         _ prompt: PromptStrategy,
         streamStopStrategy: StreamStopStrategy,
-        model: TabbyModel,
+        model: CustomSuggestionCoordinator.Model,
         count: Int
     ) async throws -> [String] {
-        let apiKey = apiKey(from: model)
-
-        let service = TabbyService(url: model.url, authorizationMode: {
-            switch model.authorizationMode {
-            case .none:
-                return .none
-            case .bearerToken:
-                return .bearerToken(apiKey)
-            case .basic:
-                return .basic(username: model.username, password: apiKey)
-            case .customHeaderField:
-                return .customHeaderField(name: model.authorizationHeaderName, value: apiKey)
-            }
-        }())
-
-        let result = try await service.getCompletions(
+        let result = try await completionService(for: model, prompt: prompt).getCompletions(
             prompt,
             streamStopStrategy: streamStopStrategy,
             count: count
@@ -117,19 +181,123 @@ public struct CodeCompletionService {
     public func getCompletions(
         _ prompt: PromptStrategy,
         streamStopStrategy: StreamStopStrategy,
+        model: TabbyModel,
+        count: Int
+    ) async throws -> [String] {
+        try await getCompletions(
+            prompt,
+            streamStopStrategy: streamStopStrategy,
+            model: .tabbyModel(model),
+            count: count
+        )
+    }
+
+    public func getCompletions(
+        _ prompt: PromptStrategy,
+        streamStopStrategy: StreamStopStrategy,
         model: ChatModel,
         count: Int
     ) async throws -> [String] {
+        try await getCompletions(
+            prompt,
+            streamStopStrategy: streamStopStrategy,
+            model: .chatModel(model),
+            count: count
+        )
+    }
+
+    public func getCompletions(
+        _ prompt: PromptStrategy,
+        streamStopStrategy: StreamStopStrategy,
+        model: CompletionModel,
+        count: Int
+    ) async throws -> [String] {
+        try await getCompletions(
+            prompt,
+            streamStopStrategy: streamStopStrategy,
+            model: .completionModel(model),
+            count: count
+        )
+    }
+
+    public func getCompletions(
+        _ prompt: PromptStrategy,
+        streamStopStrategy: StreamStopStrategy,
+        model: FIMModel,
+        count: Int
+    ) async throws -> [String] {
+        try await getCompletions(
+            prompt,
+            streamStopStrategy: streamStopStrategy,
+            model: .fimModel(model),
+            count: count
+        )
+    }
+
+    // MARK: Streaming
+
+    /// See ``CodeCompletionServiceType/streamCompletion(_:streamStopStrategy:)``.
+    func streamCompletion(
+        _ prompt: PromptStrategy,
+        streamStopStrategy: StreamStopStrategy,
+        model: CustomSuggestionCoordinator.Model
+    ) async throws -> AsyncThrowingStream<String, Swift.Error> {
+        try await completionService(for: model, prompt: prompt)
+            .streamCompletion(prompt, streamStopStrategy: streamStopStrategy)
+    }
+
+    // MARK: Per-model dispatch
+
+    func completionService(
+        for model: CustomSuggestionCoordinator.Model,
+        prompt: PromptStrategy
+    ) async throws -> ErasedCompletionService {
+        switch model {
+        case let .chatModel(model):
+            return try await completionService(for: model, prompt: prompt)
+        case let .completionModel(model):
+            return try completionService(for: model, prompt: prompt)
+        case let .tabbyModel(model):
+            return completionService(for: model, prompt: prompt)
+        case let .fimModel(model):
+            return try completionService(for: model, prompt: prompt)
+        }
+    }
+
+    func completionService(for model: TabbyModel, prompt: PromptStrategy) -> ErasedCompletionService {
+        let apiKey = apiKey(from: model)
+
+        return .init(TabbyService(url: model.url, authorizationMode: {
+            switch model.authorizationMode {
+            case .none:
+                return .none
+            case .bearerToken:
+                return .bearerToken(apiKey)
+            case .basic:
+                return .basic(username: model.username, password: apiKey)
+            case .customHeaderField:
+                return .customHeaderField(name: model.authorizationHeaderName, value: apiKey)
+            }
+        }()))
+    }
+
+    func completionService(
+        for model: ChatModel,
+        prompt: PromptStrategy
+    ) async throws -> ErasedCompletionService {
         let apiKey = apiKey(from: model)
 
         let options = await ChatAPIOptions.current(for: model, apiKey: apiKey)
+        CodeCompletionLogger.logger.logEndpoint(model.endpoint)
 
         switch model.format {
         case .openAI, .openAICompatible:
             switch options.api {
             case .responses:
-                let service = OpenAIResponsesService(
-                    url: Self.responsesEndpoint(for: model),
+                let responsesURL = Self.responsesEndpoint(for: model)
+                CodeCompletionLogger.logger.logEndpoint(responsesURL)
+                return .init(OpenAIResponsesService(
+                    url: responsesURL,
                     modelName: model.info.modelName,
                     contextWindow: model.info.maxTokens,
                     maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
@@ -144,16 +312,9 @@ public struct CodeCompletionService {
                     requiresBeginWithUserMessage: model.info.openAICompatibleInfo
                         .requiresBeginWithUserMessage,
                     enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder
-                )
-                let result = try await service.getCompletions(
-                    prompt,
-                    streamStopStrategy: streamStopStrategy,
-                    count: count
-                )
-                try Task.checkCancellation()
-                return result
+                ))
             case .chatCompletions:
-                let service = try OpenAIService(
+                return .init(try OpenAIService(
                     url: model.endpoint,
                     endpoint: .chatCompletion,
                     modelName: model.info.modelName,
@@ -170,17 +331,10 @@ public struct CodeCompletionService {
                     requiresBeginWithUserMessage: model.info.openAICompatibleInfo
                         .requiresBeginWithUserMessage,
                     enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder
-                )
-                let result = try await service.getCompletions(
-                    prompt,
-                    streamStopStrategy: streamStopStrategy,
-                    count: count
-                )
-                try Task.checkCancellation()
-                return result
+                ))
             }
         case .azureOpenAI:
-            let service = try OpenAIService(
+            return .init(try OpenAIService(
                 url: model.endpoint,
                 endpoint: .chatCompletion,
                 modelName: model.info.modelName,
@@ -192,32 +346,18 @@ public struct CodeCompletionService {
                 reasoningEffort: options.reasoningEffort,
                 reasoningTokenBudget: options.reasoningTokenBudget,
                 extraHeaders: options.extraHeaders
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .googleAI:
-            let service = GoogleGeminiService(
+            return .init(GoogleGeminiService(
                 modelName: model.info.modelName,
                 contextWindow: model.info.maxTokens,
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 apiKey: apiKey,
                 baseURL: model.endpoint,
                 apiVersion: model.info.googleGenerativeAIInfo.apiVersion
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .ollama:
-            let service = OllamaService(
+            return .init(OllamaService(
                 url: model.endpoint,
                 endpoint: .chatCompletion,
                 modelName: model.info.modelName,
@@ -227,16 +367,9 @@ public struct CodeCompletionService {
                 keepAlive: model.info.ollamaInfo.keepAlive,
                 format: .none,
                 extraHeaders: options.extraHeaders
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .claude:
-            let service = AnthropicService(
+            return .init(AnthropicService(
                 url: model.endpoint,
                 modelName: model.info.modelName,
                 contextWindow: model.info.maxTokens,
@@ -246,30 +379,21 @@ public struct CodeCompletionService {
                 extraHeaders: options.extraHeaders,
                 reasoningEffort: options.reasoningEffort,
                 customJSONBody: model.info.customBodyInfo.jsonBody
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .gitHubCopilot:
             throw Error.gitHubCopilotNotSupported
         }
     }
 
-    public func getCompletions(
-        _ prompt: PromptStrategy,
-        streamStopStrategy: StreamStopStrategy,
-        model: CompletionModel,
-        count: Int
-    ) async throws -> [String] {
+    func completionService(
+        for model: CompletionModel,
+        prompt: PromptStrategy
+    ) throws -> ErasedCompletionService {
         let apiKey = apiKey(from: model)
 
         switch model.format {
         case .openAI, .openAICompatible:
-            let service = try OpenAIService(
+            return .init(try OpenAIService(
                 url: model.endpoint,
                 endpoint: .completion,
                 modelName: model.info.modelName,
@@ -277,16 +401,9 @@ public struct CodeCompletionService {
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 stopWords: prompt.stopWords,
                 apiKey: apiKey
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .azureOpenAI:
-            let service = try OpenAIService(
+            return .init(try OpenAIService(
                 url: model.endpoint,
                 endpoint: .completion,
                 modelName: model.info.modelName,
@@ -295,16 +412,9 @@ public struct CodeCompletionService {
                 stopWords: prompt.stopWords,
                 apiKey: apiKey,
                 authentication: .apiKeyHeader
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .ollama:
-            let service = OllamaService(
+            return .init(OllamaService(
                 url: model.endpoint,
                 endpoint: .completion,
                 modelName: model.info.modelName,
@@ -313,30 +423,21 @@ public struct CodeCompletionService {
                 stopWords: prompt.stopWords,
                 keepAlive: model.info.ollamaInfo.keepAlive,
                 format: .none
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .unknown:
             throw Error.unknownFormat
         }
     }
 
-    public func getCompletions(
-        _ prompt: PromptStrategy,
-        streamStopStrategy: StreamStopStrategy,
-        model: FIMModel,
-        count: Int
-    ) async throws -> [String] {
+    func completionService(
+        for model: FIMModel,
+        prompt: PromptStrategy
+    ) throws -> ErasedCompletionService {
         let apiKey = apiKey(from: model)
 
         switch model.format {
         case .mistral:
-            let service = MistralFIMService(
+            return .init(MistralFIMService(
                 url: URL(string: model.endpoint),
                 model: model.info.modelName,
                 temperature: 0,
@@ -344,16 +445,9 @@ public struct CodeCompletionService {
                 apiKey: apiKey,
                 contextWindow: model.info.maxTokens,
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken)
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .ollama:
-            let service = OllamaService(
+            return .init(OllamaService(
                 url: model.endpoint,
                 endpoint: .completionWithSuffix,
                 modelName: model.info.modelName,
@@ -362,16 +456,9 @@ public struct CodeCompletionService {
                 stopWords: prompt.stopWords,
                 keepAlive: model.info.ollamaInfo.keepAlive,
                 format: .none
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .ollamaCompatible:
-            let service = OllamaService(
+            return .init(OllamaService(
                 url: model.endpoint,
                 endpoint: .completionWithSuffix,
                 modelName: model.info.modelName,
@@ -391,14 +478,7 @@ public struct CodeCompletionService {
                         return .bearerToken(apiKey)
                     }
                 }()
-            )
-            let result = try await service.getCompletions(
-                prompt,
-                streamStopStrategy: streamStopStrategy,
-                count: count
-            )
-            try Task.checkCancellation()
-            return result
+            ))
         case .unknown:
             throw Error.unknownFormat
         }

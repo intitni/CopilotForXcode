@@ -176,6 +176,21 @@ enum CompletionStopWords {
         guard let earliest else { return nil }
         return String(text[..<earliest])
     }
+
+    /// `text` without the longest trailing fragment that is a proper prefix of a stop word, so a
+    /// streaming display never shows the beginning of a marker such as `</Code3721>`.
+    static func displayablePrefix(of text: String, stopWords: [String]) -> String {
+        var cut = 0
+        for word in stopWords where word.count > 1 {
+            for length in stride(from: word.count - 1, through: 1, by: -1) where length > cut {
+                if text.hasSuffix(word.prefix(length)) {
+                    cut = length
+                    break
+                }
+            }
+        }
+        return cut == 0 ? text : String(text.dropLast(cut))
+    }
 }
 
 /// Helpers for `text/event-stream` lines.

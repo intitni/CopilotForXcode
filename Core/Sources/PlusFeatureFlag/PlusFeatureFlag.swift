@@ -23,6 +23,8 @@ public func withFeatureEnabled(
 ) rethrows {
     #if canImport(LicenseManagement)
     try LicenseManagement.withFeatureEnabled(flag, then: then)
+    #else
+    try then()
     #endif
 }
 
@@ -32,6 +34,8 @@ public func withFeatureEnabled(
 ) async rethrows {
     #if canImport(LicenseManagement)
     try await LicenseManagement.withFeatureEnabled(flag, then: then)
+    #else
+    try await then()
     #endif
 }
 
@@ -39,7 +43,10 @@ public func isFeatureAvailable(_ flag: KeyPath<PlusFeatureFlags, PlusFeatureFlag
     #if canImport(LicenseManagement)
     return LicenseManagement.isFeatureAvailable(flag)
     #else
-    return false
+    // Fork: this build ships no license package, so every Plus-gated limit is lifted instead of
+    // being reported as locked. Features whose implementation lives in a closed-source module are
+    // still guarded by `canImport` at their call site.
+    return true
     #endif
 }
 

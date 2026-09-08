@@ -29,6 +29,11 @@ public final class CodeCompletionLogger {
     var model = Model(type: "", format: "", modelName: "", baseURL: "")
     var prompt: [(message: String, role: String)] = []
     var responses: [String] = []
+    var endpoint: String?
+    var firstTokenTime: Date?
+    var partialCount = 0
+    var outputTokens: Int?
+    var reasoningTokens: Int?
     let startTime = Date()
     let id = UUID()
 
@@ -42,6 +47,11 @@ public final class CodeCompletionLogger {
 
     public init(request: SuggestionRequest) {
         self.request = request
+    }
+
+    /// The URL the request actually goes to, once the chat API choice is resolved.
+    public func logEndpoint(_ url: String) {
+        endpoint = url
     }
 
     public func logModel(_ chatModel: ChatModel) {
@@ -88,6 +98,22 @@ public final class CodeCompletionLogger {
         responses.append(response)
     }
 
+    /// Called when the first non-empty token arrives; later calls are ignored.
+    public func logFirstToken() {
+        if firstTokenTime == nil { firstTokenTime = Date() }
+    }
+
+    /// Called every time a partial suggestion is handed to the UI while streaming.
+    public func logPartial() {
+        partialCount += 1
+    }
+
+    /// Token usage reported by the API, when the protocol carries it.
+    public func logUsage(outputTokens: Int?, reasoningTokens: Int?) {
+        self.outputTokens = outputTokens
+        self.reasoningTokens = reasoningTokens
+    }
+
     public func error(_ error: Error) {
         if error is CancellationError { return }
         if let urlError = error as? URLError, urlError.code == .cancelled { return }
@@ -111,6 +137,8 @@ public final class CodeCompletionLogger {
         let now = Date()
         let duration = now.timeIntervalSince(startTime)
         let formattedDuration = String(format: "%.2f", duration)
+        let formattedFirstToken = firstTokenTime
+            .map { String(format: "%.2f", $0.timeIntervalSince(startTime)) } ?? "n/a"
 
         Logger.service.info("""
         [Request] \(id)
@@ -118,7 +146,11 @@ public final class CodeCompletionLogger {
         Format: \(model.format)
         Model Name: \(model.modelName)
         Base URL: \(model.baseURL)
+        Endpoint: \(endpoint ?? "n/a")
         Duration: \(formattedDuration)
+        First Token: \(formattedFirstToken)
+        Partials: \(partialCount)
+        Output Tokens: \(outputTokens.map(String.init) ?? "n/a") (reasoning: \(reasoningTokens.map(String.init) ?? "n/a"))
         ---
         File URL: \(request.fileURL)
         Code Snippets: \(request.relevantCodeSnippets.count) snippets
