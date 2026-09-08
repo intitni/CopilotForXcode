@@ -68,7 +68,10 @@ struct CustomModelSuggestionView: View {
                 }
 
                 Section {
-                    Toggle("Verbose Log (Logs to Console.app)", isOn: settings.$verboseLog)
+                    Toggle(
+                        "Verbose Log (writes prompts including your source code to Console.app)",
+                        isOn: settings.$verboseLog
+                    )
                 }
             }
             .formStyle(.grouped)

@@ -95,7 +95,10 @@ let package = Package(
     targets: [
         // MARK: - Helpers
 
-        .target(name: "XPCShared", dependencies: ["SuggestionBasic", "Logger"]),
+        .target(
+            name: "XPCShared",
+            dependencies: ["SuggestionBasic", "Logger", "ObjectiveCExceptionHandling"]
+        ),
 
         .target(name: "Configs"),
 

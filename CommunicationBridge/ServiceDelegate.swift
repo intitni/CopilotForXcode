@@ -8,6 +8,22 @@ class ServiceDelegate: NSObject, NSXPCListenerDelegate {
         _: NSXPCListener,
         shouldAcceptNewConnection newConnection: NSXPCConnection
     ) -> Bool {
+        guard let teamID = XPCPeerRequirement.teamID(fromPrefix: teamIDPrefix) else {
+            Logger.communicationBridge.error(
+                "Rejected XPC connection from pid \(newConnection.processIdentifier): Team ID is unavailable."
+            )
+            return false
+        }
+        let requirement = XPCPeerRequirement.codeSigningRequirement(teamID: teamID)
+        do {
+            try XPCPeerRequirement.setCodeSigningRequirement(on: newConnection, teamID: teamID)
+        } catch {
+            Logger.communicationBridge.error(
+                "Rejected XPC connection from pid \(newConnection.processIdentifier): invalid code signing requirement (\(requirement))."
+            )
+            return false
+        }
+
         newConnection.exportedInterface = NSXPCInterface(
             with: CommunicationBridgeXPCServiceProtocol.self
         )
@@ -107,6 +123,16 @@ actor EventHandler {
         withReply reply: () -> Void
     ) {
         rescheduleExitTask()
+        let expectedBundleID = bundleIdentifierBase + ".ExtensionService"
+        let actualBundleID = NSRunningApplication(processIdentifier: processIdentifier)?
+            .bundleIdentifier
+        guard actualBundleID == expectedBundleID else {
+            Logger.communicationBridge.error(
+                "Ignoring service endpoint from pid \(processIdentifier) (\(actualBundleID ?? "unknown bundle id")); expected \(expectedBundleID)."
+            )
+            reply()
+            return
+        }
         self.endpoint = endpoint
         endpointPID = processIdentifier
         reply()

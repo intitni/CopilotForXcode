@@ -15,6 +15,7 @@ import XPCShared
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
+let teamIDPrefix = Bundle.main.object(forInfoDictionaryKey: "TEAM_ID_PREFIX") as? String
 let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 
 @main
