@@ -13,6 +13,7 @@ public actor OllamaService {
     let keepAlive: String
     let format: ResponseFormat
     let authenticationMode: AuthenticationMode?
+    let extraHeaders: [(name: String, value: String)]
     
     enum AuthenticationMode {
         case bearerToken(String)
@@ -40,7 +41,8 @@ public actor OllamaService {
         stopWords: [String] = [],
         keepAlive: String = "",
         format: ResponseFormat = .none,
-        authenticationMode: AuthenticationMode? = nil
+        authenticationMode: AuthenticationMode? = nil,
+        extraHeaders: [(name: String, value: String)] = []
     ) {
         self.url = url.flatMap(URL.init(string:)) ?? {
             switch endpoint {
@@ -60,6 +62,7 @@ public actor OllamaService {
         self.format = format
         self.contextWindow = contextWindow
         self.authenticationMode = authenticationMode
+        self.extraHeaders = extraHeaders
     }
 }
 
@@ -208,6 +211,7 @@ extension OllamaService {
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(
             result: result,
@@ -293,6 +297,7 @@ extension OllamaService {
         case let .header(name, value):
             request.setValue(value, forHTTPHeaderField: name)
         }
+        request.setExtraHeaders(extraHeaders)
         
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(

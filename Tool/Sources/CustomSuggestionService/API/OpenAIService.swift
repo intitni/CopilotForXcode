@@ -1,6 +1,8 @@
 import CopilotForXcodeKit
 import Foundation
 import AIModel
+import Logger
+import Preferences
 
 public actor OpenAIService {
     let url: URL
@@ -14,7 +16,13 @@ public actor OpenAIService {
     /// When set, the request takes the reasoning model shape: `reasoning_effort` is sent,
     /// `max_completion_tokens` replaces `max_tokens`, `temperature` and `stop` are omitted.
     let reasoningEffort: ReasoningEffort?
+    let reasoningTokenBudget: Int
     let extraHeaders: [(name: String, value: String)]
+    let organizationID: String
+    let projectID: String
+    let customJSONBody: String
+    let requiresBeginWithUserMessage: Bool
+    let enforceMessageOrder: Bool
 
     public enum Endpoint {
         case completion
@@ -31,10 +39,22 @@ public actor OpenAIService {
         stopWords: [String] = [],
         apiKey: String,
         reasoningEffort: ReasoningEffort? = nil,
-        extraHeaders: [(name: String, value: String)] = []
+        reasoningTokenBudget: Int = 1500,
+        extraHeaders: [(name: String, value: String)] = [],
+        organizationID: String = "",
+        projectID: String = "",
+        customJSONBody: String = "",
+        requiresBeginWithUserMessage: Bool = false,
+        enforceMessageOrder: Bool = false
     ) {
         self.reasoningEffort = reasoningEffort
+        self.reasoningTokenBudget = reasoningTokenBudget
         self.extraHeaders = extraHeaders
+        self.organizationID = organizationID
+        self.projectID = projectID
+        self.customJSONBody = customJSONBody
+        self.requiresBeginWithUserMessage = requiresBeginWithUserMessage
+        self.enforceMessageOrder = enforceMessageOrder
         self.url = url.flatMap(URL.init(string:)) ?? {
             switch endpoint {
             case .chatCompletion:
@@ -128,39 +148,83 @@ extension OpenAIService {
             contextWindow - maxToken - 20
         ))
         let prompts = strategy.createTruncatedPrompt(promptStrategy: request)
-        return [
+        var ordered: [OrderedChatMessage] = [
             .init(role: .system, content: request.systemPrompt),
-        ] + prompts.map { prompt in
+        ]
+        for prompt in prompts {
             switch prompt.role {
             case .user:
-                return .init(role: .user, content: prompt.content)
+                ordered.append(.init(role: .user, content: prompt.content))
             case .assistant:
-                return .init(role: .assistant, content: prompt.content)
+                ordered.append(.init(role: .assistant, content: prompt.content))
             }
+        }
+        ordered = OrderedChatMessages.apply(
+            ordered,
+            requiresBeginWithUserMessage: requiresBeginWithUserMessage,
+            enforceMessageOrder: enforceMessageOrder
+        )
+        return ordered.map { message in
+            let role: Message.Role = switch message.role {
+            case .system: .system
+            case .user: .user
+            case .assistant: .assistant
+            }
+            return .init(role: role, content: message.content)
         }
     }
 
-    func sendMessages(
-        _ messages: [Message]
-    ) async throws -> ResponseStream<ChatCompletionsStreamDataChunk> {
+    nonisolated static func makeChatCompletionRequestBody(
+        modelName: String,
+        messages: [Message],
+        temperature: Double,
+        stopWords: [String],
+        maxToken: Int,
+        reasoningEffort: ReasoningEffort?,
+        reasoningTokenBudget: Int
+    ) -> ChatCompletionRequestBody {
         let isReasoningRequest = reasoningEffort != nil
-        let requestBody = ChatCompletionRequestBody(
+        return ChatCompletionRequestBody(
             model: modelName,
             messages: messages,
             temperature: isReasoningRequest ? nil : temperature,
             stream: true,
             stop: isReasoningRequest ? nil : stopWords,
             max_tokens: isReasoningRequest ? nil : maxToken,
-            max_completion_tokens: isReasoningRequest ? maxToken : nil,
+            max_completion_tokens: isReasoningRequest
+                ? ReasoningTokenLimit.maxOutputTokens(
+                    maxToken: maxToken,
+                    effort: reasoningEffort,
+                    budget: reasoningTokenBudget
+                )
+                : nil,
             reasoning_effort: reasoningEffort?.rawValue
+        )
+    }
+
+    func sendMessages(
+        _ messages: [Message]
+    ) async throws -> ResponseStream<ChatCompletionsStreamDataChunk> {
+        let requestBody = Self.makeChatCompletionRequestBody(
+            modelName: modelName,
+            messages: messages,
+            temperature: temperature,
+            stopWords: stopWords,
+            maxToken: maxToken,
+            reasoningEffort: reasoningEffort,
+            reasoningTokenBudget: reasoningTokenBudget
         )
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
+        request.httpBody = CompletionJSON.mergeCustomBody(
+            try encoder.encode(requestBody),
+            jsonBody: customJSONBody
+        )
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setOpenAIIdentityHeaders(organizationID: organizationID, projectID: projectID)
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(
@@ -185,11 +249,21 @@ extension OpenAIService {
                 ChatCompletionResponseBody.self,
                 from: Data(text.utf8)
             )
-            return chatChunk(from: body)
+            let chunk = chatChunk(from: body)
+            logIfTruncatedByLength(chunk)
+            return chunk
         } catch let error as Error {
             throw error
         } catch {
             throw Error.otherError(CompletionHTTP.parseFailureMessage(url: url))
+        }
+    }
+
+    static func logIfTruncatedByLength(_ chunk: ChatCompletionsStreamDataChunk) {
+        if chunk.choices?.first?.finish_reason == "length" {
+            Logger.service.error(
+                "Completion truncated: finish_reason=length request_id=\(chunk.id ?? "unknown")"
+            )
         }
     }
 
@@ -239,6 +313,7 @@ extension OpenAIService {
             ChatCompletionsStreamDataChunk.self,
             from: Data(payload.utf8)
         )
+        logIfTruncatedByLength(chunk)
         // A non-streaming body carries the whole message instead of a delta.
         if let choice = chunk.choices?.first, choice.delta == nil, let message = choice.message {
             return .init(
@@ -372,9 +447,13 @@ extension OpenAIService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
+        request.httpBody = CompletionJSON.mergeCustomBody(
+            try encoder.encode(requestBody),
+            jsonBody: customJSONBody
+        )
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setOpenAIIdentityHeaders(organizationID: organizationID, projectID: projectID)
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(

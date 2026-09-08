@@ -1,6 +1,8 @@
 import AIModel
 import CopilotForXcodeKit
 import Foundation
+import Logger
+import Preferences
 
 /// `POST /v1/responses`
 ///
@@ -13,7 +15,13 @@ public actor OpenAIResponsesService {
     let apiKey: String
     let stopWords: [String]
     let reasoningEffort: ReasoningEffort?
+    let reasoningTokenBudget: Int
     let extraHeaders: [(name: String, value: String)]
+    let organizationID: String
+    let projectID: String
+    let customJSONBody: String
+    let requiresBeginWithUserMessage: Bool
+    let enforceMessageOrder: Bool
 
     init(
         url: String? = nil,
@@ -23,7 +31,13 @@ public actor OpenAIResponsesService {
         stopWords: [String] = [],
         apiKey: String,
         reasoningEffort: ReasoningEffort? = nil,
-        extraHeaders: [(name: String, value: String)] = []
+        reasoningTokenBudget: Int = 1500,
+        extraHeaders: [(name: String, value: String)] = [],
+        organizationID: String = "",
+        projectID: String = "",
+        customJSONBody: String = "",
+        requiresBeginWithUserMessage: Bool = false,
+        enforceMessageOrder: Bool = false
     ) {
         self.url = url.flatMap(URL.init(string:))
             ?? URL(string: "https://api.openai.com/v1/responses")!
@@ -33,7 +47,13 @@ public actor OpenAIResponsesService {
         self.apiKey = apiKey
         self.stopWords = stopWords
         self.reasoningEffort = reasoningEffort
+        self.reasoningTokenBudget = reasoningTokenBudget
         self.extraHeaders = extraHeaders
+        self.organizationID = organizationID
+        self.projectID = projectID
+        self.customJSONBody = customJSONBody
+        self.requiresBeginWithUserMessage = requiresBeginWithUserMessage
+        self.enforceMessageOrder = enforceMessageOrder
     }
 }
 
@@ -78,7 +98,33 @@ extension OpenAIResponsesService {
         var instructions: String?
         var stream: Bool
         var max_output_tokens: Int
+        var store: Bool
+        var temperature: Double?
         var reasoning: Reasoning?
+    }
+
+    nonisolated static func makeRequestBody(
+        modelName: String,
+        input: [InputItem],
+        instructions: String?,
+        maxToken: Int,
+        reasoningEffort: ReasoningEffort?,
+        reasoningTokenBudget: Int
+    ) -> RequestBody {
+        RequestBody(
+            model: modelName,
+            input: input,
+            instructions: instructions,
+            stream: true,
+            max_output_tokens: ReasoningTokenLimit.maxOutputTokens(
+                maxToken: maxToken,
+                effort: reasoningEffort,
+                budget: reasoningTokenBudget
+            ),
+            store: false,
+            temperature: reasoningEffort == nil ? 0.2 : nil,
+            reasoning: reasoningEffort.map { .init(effort: $0.rawValue) }
+        )
     }
 
     func createInput(from request: PromptStrategy) -> (instructions: String, input: [InputItem]) {
@@ -87,35 +133,62 @@ extension OpenAIResponsesService {
             contextWindow - maxToken - 20
         ))
         let prompts = strategy.createTruncatedPrompt(promptStrategy: request)
-        let input = prompts.map { prompt -> InputItem in
+        var ordered: [OrderedChatMessage] = [
+            .init(role: .system, content: request.systemPrompt),
+        ]
+        for prompt in prompts {
             switch prompt.role {
             case .user:
-                return .init(role: "user", content: [.init(type: "input_text", text: prompt.content)])
+                ordered.append(.init(role: .user, content: prompt.content))
+            case .assistant:
+                ordered.append(.init(role: .assistant, content: prompt.content))
+            }
+        }
+        ordered = OrderedChatMessages.apply(
+            ordered,
+            requiresBeginWithUserMessage: requiresBeginWithUserMessage,
+            enforceMessageOrder: enforceMessageOrder
+        )
+        let instructions = ordered.filter { $0.role == .system }.map(\.content)
+            .joined(separator: "\n\n")
+        let input = ordered.compactMap { message -> InputItem? in
+            switch message.role {
+            case .system:
+                return nil
+            case .user:
+                return .init(
+                    role: "user",
+                    content: [.init(type: "input_text", text: message.content)]
+                )
             case .assistant:
                 return .init(
                     role: "assistant",
-                    content: [.init(type: "output_text", text: prompt.content)]
+                    content: [.init(type: "output_text", text: message.content)]
                 )
             }
         }
-        return (request.systemPrompt, input)
+        return (instructions, input)
     }
 
     func send(instructions: String, input: [InputItem]) async throws -> ResponseStream<StreamChunk> {
-        let requestBody = RequestBody(
-            model: modelName,
+        let requestBody = Self.makeRequestBody(
+            modelName: modelName,
             input: input,
             instructions: instructions.isEmpty ? nil : instructions,
-            stream: true,
-            max_output_tokens: maxToken,
-            reasoning: reasoningEffort.map { .init(effort: $0.rawValue) }
+            maxToken: maxToken,
+            reasoningEffort: reasoningEffort,
+            reasoningTokenBudget: reasoningTokenBudget
         )
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.httpBody = try JSONEncoder().encode(requestBody)
+        request.httpBody = CompletionJSON.mergeCustomBody(
+            try JSONEncoder().encode(requestBody),
+            jsonBody: customJSONBody
+        )
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setOpenAIIdentityHeaders(organizationID: organizationID, projectID: projectID)
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(
@@ -168,11 +241,17 @@ extension OpenAIResponsesService {
         var content: [OutputContent]?
     }
 
+    struct IncompleteDetails: Decodable {
+        var reason: String?
+    }
+
     struct ResponseObject: Decodable {
+        var id: String?
         var object: String?
         var status: String?
         var output: [OutputItem]?
         var error: APIError?
+        var incomplete_details: IncompleteDetails?
 
         var outputText: String {
             (output ?? [])
@@ -219,14 +298,28 @@ extension OpenAIResponsesService {
         switch event.type {
         case "response.output_text.delta":
             return .init(chunk: .init(text: event.delta), done: false)
-        case "response.completed", "response.incomplete":
+        case "response.completed":
+            return .init(chunk: nil, done: true)
+        case "response.incomplete":
+            if event.response?.incomplete_details?.reason == "max_output_tokens" {
+                Logger.service.error(
+                    "Completion truncated: incomplete_details.reason=max_output_tokens request_id=\(event.response?.id ?? "unknown")"
+                )
+            }
             return .init(chunk: nil, done: true)
         case "response.failed":
             throw Error.apiError(event.response?.error?.message ?? "The response failed.")
         case "error":
             throw Error.apiError(event.error?.message ?? event.message ?? "Unknown error.")
         case .none where event.object == "response":
-            let body = ResponseObject(object: event.object, status: nil, output: event.output, error: nil)
+            let body = ResponseObject(
+                id: nil,
+                object: event.object,
+                status: nil,
+                output: event.output,
+                error: nil,
+                incomplete_details: nil
+            )
             return .init(chunk: .init(text: body.outputText), done: true)
         default:
             return .init(chunk: nil, done: false)

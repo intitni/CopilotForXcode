@@ -1,5 +1,7 @@
+import AIModel
 import CopilotForXcodeKit
 import Foundation
+import Preferences
 import XCTest
 
 @testable import CustomSuggestionService
@@ -92,15 +94,30 @@ class ChatAPIStreamParsingTests: XCTestCase {
         XCTAssertNil(SSELine.payload(of: "   "))
     }
 
-    func test_header_placeholders() {
-        XCTAssertEqual(
-            ChatAPIOptions.substitutePlaceholders(
-                in: "Bearer {{api_key}} for {{model_name}}",
+    func test_header_placeholders() async {
+        let (defaults, suite) = isolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let model = ChatModel(
+            id: "header-model",
+            name: "Headers",
+            format: .openAI,
+            info: .init(
                 modelName: "gpt-5.5",
-                apiKey: "sk-1"
-            ),
-            "Bearer sk-1 for gpt-5.5"
+                customHeaderInfo: .init(headers: [
+                    .init(key: "X-Auth", value: "Bearer {{api_key}} for {{model_name}}"),
+                    .init(key: "Bad Name", value: "nope"),
+                    .init(key: "X-NL", value: "a\nb"),
+                ])
+            )
         )
+        let options = await ChatAPIOptions.current(
+            for: model,
+            apiKey: "sk-1",
+            defaults: defaults
+        )
+        XCTAssertEqual(options.extraHeaders.map(\.name), ["X-Auth"])
+        XCTAssertEqual(options.extraHeaders.first?.value, "Bearer sk-1 for gpt-5.5")
     }
 
     func test_chatCompletions_error_line_throws_apiError() {
@@ -232,6 +249,13 @@ class ChatAPIStreamParsingTests: XCTestCase {
             XCTFail("unexpected \(error)")
         }
     }
+}
+
+private func isolatedDefaults() -> (UserDefaults, String) {
+    let name = "wp3.tests.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: name)!
+    defaults.removePersistentDomain(forName: name)
+    return (defaults, name)
 }
 
 private struct ErrorVisibilityPrompt: PromptStrategy {

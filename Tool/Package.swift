@@ -471,6 +471,8 @@ let package = Package(
                 "Keychain",
                 "Logger",
                 "BuiltinExtension",
+                "OpenAIService",
+                "JoinJSON",
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
                 .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
                 .product(name: "Parsing", package: "swift-parsing"),
@@ -478,7 +480,7 @@ let package = Package(
         ),
         .testTarget(
             name: "CustomSuggestionServiceTests",
-            dependencies: ["CustomSuggestionService", "AIModel"]
+            dependencies: ["CustomSuggestionService", "AIModel", "Preferences", "JoinJSON"]
         ),
 
         // MARK: - OpenAI

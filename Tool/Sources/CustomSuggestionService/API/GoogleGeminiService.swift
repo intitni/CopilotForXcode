@@ -9,6 +9,8 @@ public struct GoogleGeminiService {
     let temperature: Double
     let stopWords: [String]
     let apiKey: String
+    let baseURL: String
+    let apiVersion: String
 
     init(
         modelName: String,
@@ -16,7 +18,9 @@ public struct GoogleGeminiService {
         maxToken: Int,
         temperature: Double = 0.2,
         stopWords: [String] = [],
-        apiKey: String
+        apiKey: String,
+        baseURL: String = "",
+        apiVersion: String = ""
     ) {
         self.modelName = modelName
         self.maxToken = maxToken
@@ -24,6 +28,8 @@ public struct GoogleGeminiService {
         self.temperature = temperature
         self.stopWords = stopWords
         self.apiKey = apiKey
+        self.baseURL = baseURL
+        self.apiVersion = apiVersion
     }
 }
 
@@ -101,7 +107,11 @@ extension GoogleGeminiService {
                 temperature: Float(temperature),
                 maxOutputTokens: maxToken,
                 stopSequences: stopWords
-            ))
+            )),
+            baseURL: baseURL,
+            requestOptions: apiVersion.isEmpty
+                ? .init()
+                : .init(apiVersion: apiVersion)
         )
 
         do {

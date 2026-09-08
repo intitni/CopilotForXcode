@@ -38,7 +38,7 @@ struct CustomModelSuggestionView: View {
                     }
 
                     NumberInput(value: settings.$maxLines, range: 0...Int.max, step: 1) {
-                        Text("Suggestion Line Limit (0 for unlimited)")
+                        Text("Suggestion Line Limit (0 means stop words only)")
                     }
 
                     NumberInput(
@@ -63,7 +63,7 @@ struct CustomModelSuggestionView: View {
                         Text("Chat Model API")
                     } footer: {
                         Text(
-                            "Applies to OpenAI and OpenAI compatible chat models. Setting a reasoning effort switches the request to the reasoning model shape: reasoning_effort is sent, max_completion_tokens replaces max_tokens, temperature and stop are omitted. Anthropic models always use /v1/messages."
+                            "Applies to the selected chat model. Setting a reasoning effort switches the request to the reasoning model shape: reasoning_effort is sent, max_completion_tokens replaces max_tokens, temperature and stop are omitted. Anthropic models always use /v1/messages. Headers sent to the gateway are only meaningful to the gateway itself and are not forwarded upstream."
                         )
                     }
                 }
@@ -111,10 +111,14 @@ struct CustomModelPicker: View {
     @StateObject var settings = Settings()
 
     var body: some View {
+        let selectedChatModel = settings.chatModels.first { $0.id == settings.modelId }
+        let isUnsupportedGitHubCopilot = selectedChatModel?.format == .gitHubCopilot
         let unknownId: String? =
-            if !settings.chatModels.contains(where: { $0.id == settings.modelId }),
-            !settings.modelId.isEmpty,
-            CustomModelType(rawValue: settings.modelId) == nil
+            if isUnsupportedGitHubCopilot {
+                settings.modelId
+            } else if !settings.modelId.isEmpty,
+            CustomModelType(rawValue: settings.modelId) == nil,
+            selectedChatModel == nil
         {
             settings.modelId
         } else {
@@ -123,7 +127,11 @@ struct CustomModelPicker: View {
 
         Picker(selection: settings.$modelId, label: Text("Model")) {
             if let unknownId {
-                Text("Unknown Model (Use Custom Model Instead)").tag(unknownId)
+                if isUnsupportedGitHubCopilot {
+                    Text("GitHub Copilot (pick another model)").tag(unknownId)
+                } else {
+                    Text("Unknown Model (Use Custom Model Instead)").tag(unknownId)
+                }
             }
 
             ForEach(CustomModelType.allCases, id: \.rawValue) {
@@ -137,7 +145,7 @@ struct CustomModelPicker: View {
                 }
             }
 
-            ForEach(settings.chatModels, id: \.id) { chatModel in
+            ForEach(settings.chatModels.filter { $0.format != .gitHubCopilot }, id: \.id) { chatModel in
                 Text(chatModel.name).tag(chatModel.id)
             }
         }
@@ -199,28 +207,83 @@ struct RequestStrategyPicker: View {
 
 struct ChatAPIOptionsPicker: View {
     final class Settings: ObservableObject {
-        @AppStorage(\.customSuggestionOpenAIAPI) var openAIAPI
-        @AppStorage(\.customSuggestionReasoningEffort) var reasoningEffort
+        @AppStorage(\.customSuggestionModelId) var modelId
+        @AppStorage(\.chatModels) var chatModels: [ChatModel]
     }
 
     @StateObject var settings = Settings()
 
+    private var selectedModel: ChatModel? {
+        settings.chatModels.first { $0.id == settings.modelId }
+    }
+
+    private var options: ChatModelAPIOptions {
+        ChatModelAPIOptions.stored(for: settings.modelId)
+    }
+
+    private func update(_ mutate: (inout ChatModelAPIOptions) -> Void) {
+        var current = options
+        mutate(&current)
+        ChatModelAPIOptions.update(current, for: settings.modelId)
+        settings.objectWillChange.send()
+    }
+
     var body: some View {
-        Picker(selection: settings.$openAIAPI, label: Text("OpenAI Endpoint")) {
-            ForEach(OpenAIChatAPI.allCases, id: \.rawValue) { api in
-                switch api {
-                case .chatCompletions:
-                    Text("Chat Completions (/v1/chat/completions)").tag(api.rawValue)
-                case .responses:
-                    Text("Responses (/v1/responses)").tag(api.rawValue)
+        let format = selectedModel?.format
+        let currentOptions = options
+        let showsEndpoint = format == .openAI || format == .openAICompatible
+        let showsEffort = format == .openAI || format == .openAICompatible || format == .claude
+
+        if showsEndpoint {
+            Picker(
+                selection: Binding(
+                    get: { currentOptions.api.rawValue },
+                    set: { newValue in
+                        update { $0.api = OpenAIChatAPI(rawValue: newValue) ?? .chatCompletions }
+                    }
+                ),
+                label: Text("OpenAI Endpoint")
+            ) {
+                ForEach(OpenAIChatAPI.allCases, id: \.rawValue) { api in
+                    switch api {
+                    case .chatCompletions:
+                        Text("Chat Completions (/v1/chat/completions)").tag(api.rawValue)
+                    case .responses:
+                        Text("Responses (/v1/responses)").tag(api.rawValue)
+                    }
                 }
             }
         }
 
-        Picker(selection: settings.$reasoningEffort, label: Text("Reasoning Effort")) {
-            Text("Not Set").tag("")
-            ForEach(ReasoningEffort.allCases, id: \.rawValue) { effort in
-                Text(effort.rawValue.capitalized).tag(effort.rawValue)
+        if showsEffort {
+            Picker(
+                selection: Binding(
+                    get: { currentOptions.reasoningEffort?.rawValue ?? "" },
+                    set: { newValue in
+                        update { $0.reasoningEffort = ReasoningEffort(rawValue: newValue) }
+                    }
+                ),
+                label: Text("Reasoning Effort")
+            ) {
+                Text("Not Set").tag("")
+                ForEach(ReasoningEffort.allCases, id: \.rawValue) { effort in
+                    Text(effort.rawValue.capitalized).tag(effort.rawValue)
+                }
+            }
+        }
+
+        if showsEndpoint, currentOptions.reasoningEffort != nil {
+            NumberInput(
+                value: Binding(
+                    get: { currentOptions.reasoningTokenBudget },
+                    set: { newValue in
+                        update { $0.reasoningTokenBudget = newValue }
+                    }
+                ),
+                range: 0...Int.max,
+                step: 100
+            ) {
+                Text("Reasoning Token Budget")
             }
         }
     }

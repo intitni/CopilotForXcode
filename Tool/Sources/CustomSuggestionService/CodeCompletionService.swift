@@ -20,12 +20,11 @@ extension CodeCompletionServiceType {
                 _ = group.addTaskUnlessCancelled {
                     let limiter = StreamLineLimiter(strategy: streamStopStrategy)
                     let stream = try await getCompletion(request)
-                    for try await response in stream {
-                        if case let .finish(result) = limiter.push(response) {
-                            return result
-                        }
-                    }
-                    return limiter.result
+                    return try await collectCompletion(
+                        from: stream,
+                        stopWords: request.stopWords,
+                        limiter: limiter
+                    )
                 }
             }
 
@@ -48,11 +47,41 @@ extension CodeCompletionServiceType {
     }
 }
 
+func collectCompletion<S: AsyncSequence>(
+    from stream: S,
+    stopWords: [String],
+    limiter: StreamLineLimiter
+) async throws -> String where S.Element == String {
+    for try await response in stream {
+        let push = limiter.push(response)
+        if let truncated = CompletionStopWords.truncatedPrefix(
+            of: limiter.result,
+            stopWords: stopWords
+        ) {
+            return truncated
+        }
+        if case let .finish(result) = push {
+            return result
+        }
+    }
+    return limiter.result
+}
+
 public struct CodeCompletionService {
     public init() {}
 
-    public enum Error: Swift.Error {
+    public enum Error: Swift.Error, LocalizedError {
         case unknownFormat
+        case gitHubCopilotNotSupported
+
+        public var errorDescription: String? {
+            switch self {
+            case .unknownFormat:
+                return "Unknown model format."
+            case .gitHubCopilotNotSupported:
+                return "GitHub Copilot chat models can't be used for completion"
+            }
+        }
     }
 
     public func getCompletions(
@@ -93,7 +122,7 @@ public struct CodeCompletionService {
     ) async throws -> [String] {
         let apiKey = apiKey(from: model)
 
-        let options = ChatAPIOptions.current(for: model, apiKey: apiKey)
+        let options = await ChatAPIOptions.current(for: model, apiKey: apiKey)
 
         switch model.format {
         case .openAI, .openAICompatible:
@@ -107,7 +136,14 @@ public struct CodeCompletionService {
                     stopWords: prompt.stopWords,
                     apiKey: apiKey,
                     reasoningEffort: options.reasoningEffort,
-                    extraHeaders: options.extraHeaders
+                    reasoningTokenBudget: options.reasoningTokenBudget,
+                    extraHeaders: options.extraHeaders,
+                    organizationID: model.info.openAIInfo.organizationID,
+                    projectID: model.info.openAIInfo.projectID,
+                    customJSONBody: model.info.customBodyInfo.jsonBody,
+                    requiresBeginWithUserMessage: model.info.openAICompatibleInfo
+                        .requiresBeginWithUserMessage,
+                    enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder
                 )
                 let result = try await service.getCompletions(
                     prompt,
@@ -126,7 +162,14 @@ public struct CodeCompletionService {
                     stopWords: prompt.stopWords,
                     apiKey: apiKey,
                     reasoningEffort: options.reasoningEffort,
-                    extraHeaders: options.extraHeaders
+                    reasoningTokenBudget: options.reasoningTokenBudget,
+                    extraHeaders: options.extraHeaders,
+                    organizationID: model.info.openAIInfo.organizationID,
+                    projectID: model.info.openAIInfo.projectID,
+                    customJSONBody: model.info.customBodyInfo.jsonBody,
+                    requiresBeginWithUserMessage: model.info.openAICompatibleInfo
+                        .requiresBeginWithUserMessage,
+                    enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder
                 )
                 let result = try await service.getCompletions(
                     prompt,
@@ -144,7 +187,8 @@ public struct CodeCompletionService {
                 contextWindow: model.info.maxTokens,
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 stopWords: prompt.stopWords,
-                apiKey: apiKey
+                apiKey: apiKey,
+                extraHeaders: options.extraHeaders
             )
             let result = try await service.getCompletions(
                 prompt,
@@ -158,7 +202,9 @@ public struct CodeCompletionService {
                 modelName: model.info.modelName,
                 contextWindow: model.info.maxTokens,
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
-                apiKey: apiKey
+                apiKey: apiKey,
+                baseURL: model.endpoint,
+                apiVersion: model.info.googleGenerativeAIInfo.apiVersion
             )
             let result = try await service.getCompletions(
                 prompt,
@@ -176,7 +222,8 @@ public struct CodeCompletionService {
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 stopWords: prompt.stopWords,
                 keepAlive: model.info.ollamaInfo.keepAlive,
-                format: .none
+                format: .none,
+                extraHeaders: options.extraHeaders
             )
             let result = try await service.getCompletions(
                 prompt,
@@ -193,7 +240,9 @@ public struct CodeCompletionService {
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 stopWords: prompt.stopWords,
                 apiKey: apiKey,
-                extraHeaders: options.extraHeaders
+                extraHeaders: options.extraHeaders,
+                reasoningEffort: options.reasoningEffort,
+                customJSONBody: model.info.customBodyInfo.jsonBody
             )
             let result = try await service.getCompletions(
                 prompt,
@@ -203,7 +252,7 @@ public struct CodeCompletionService {
             try Task.checkCancellation()
             return result
         case .gitHubCopilot:
-            throw Error.unknownFormat
+            throw Error.gitHubCopilotNotSupported
         }
     }
 
@@ -355,8 +404,42 @@ public struct CodeCompletionService {
     static func responsesEndpoint(for model: ChatModel) -> String {
         let baseURL = model.info.baseURL
         if baseURL.isEmpty { return "https://api.openai.com/v1/responses" }
-        if model.format == .openAICompatible, model.info.isFullURL { return baseURL }
-        return "\(baseURL)/v1/responses"
+        if model.format == .openAICompatible, model.info.isFullURL {
+            return rewriteChatCompletionsFullURL(baseURL)
+        }
+        let trimmed = baseURL.hasSuffix("/") ? String(baseURL.dropLast()) : baseURL
+        return "\(trimmed)/v1/responses"
+    }
+
+    /// Full URLs may have a trailing slash or query; match `/chat/completions` on the path only.
+    static func rewriteChatCompletionsFullURL(_ baseURL: String) -> String {
+        if let url = URL(string: baseURL),
+           var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        {
+            var path = components.path
+            while path.count > 1, path.hasSuffix("/") {
+                path.removeLast()
+            }
+            if path.hasSuffix("/chat/completions") {
+                components.path = String(path.dropLast("/chat/completions".count)) + "/responses"
+                if let rewritten = components.string {
+                    return rewritten
+                }
+            }
+            return baseURL
+        }
+
+        let parts = baseURL.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
+        var head = String(parts[0])
+        while head.hasSuffix("/") {
+            head.removeLast()
+        }
+        guard head.hasSuffix("/chat/completions") else { return baseURL }
+        head = String(head.dropLast("/chat/completions".count)) + "/responses"
+        if parts.count > 1 {
+            return head + "?" + parts[1]
+        }
+        return head
     }
 
     func apiKey(from model: ChatModel) -> String {

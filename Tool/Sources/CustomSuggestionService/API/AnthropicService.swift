@@ -2,6 +2,7 @@ import CopilotForXcodeKit
 import Foundation
 import AIModel
 import Logger
+import Preferences
 
 public actor AnthropicService {
     let url: URL
@@ -12,6 +13,8 @@ public actor AnthropicService {
     let apiKey: String
     let stopWords: [String]
     let extraHeaders: [(name: String, value: String)]
+    let reasoningEffort: ReasoningEffort?
+    let customJSONBody: String
 
     init(
         url: String? = nil,
@@ -21,9 +24,13 @@ public actor AnthropicService {
         temperature: Double = 0.2,
         stopWords: [String] = [],
         apiKey: String,
-        extraHeaders: [(name: String, value: String)] = []
+        extraHeaders: [(name: String, value: String)] = [],
+        reasoningEffort: ReasoningEffort? = nil,
+        customJSONBody: String = ""
     ) {
         self.extraHeaders = extraHeaders
+        self.reasoningEffort = reasoningEffort
+        self.customJSONBody = customJSONBody
         self.url = url.flatMap(URL.init(string:)) ??
             URL(string: "https://api.anthropic.com/v1/messages")!
         self.modelName = modelName
@@ -80,6 +87,10 @@ extension AnthropicService {
         var content: String
     }
 
+    struct OutputConfig: Codable, Equatable {
+        var effort: String
+    }
+
     struct MessageRequestBody: Codable {
         var model: String
         var messages: [Message]
@@ -88,6 +99,7 @@ extension AnthropicService {
         var temperature: Double
         var stream: Bool = true
         var stop_sequences: [String]?
+        var output_config: OutputConfig?
 
         enum CodingKeys: String, CodingKey {
             case model
@@ -97,7 +109,42 @@ extension AnthropicService {
             case temperature
             case stream
             case stop_sequences
+            case output_config
         }
+    }
+
+    nonisolated static func outputConfig(for effort: ReasoningEffort?) -> OutputConfig? {
+        guard let effort else { return nil }
+        let value: String
+        switch effort {
+        case .low, .medium, .high:
+            value = effort.rawValue
+        case .none, .minimal:
+            value = "low"
+        case .xhigh:
+            value = "high"
+        }
+        return .init(effort: value)
+    }
+
+    nonisolated static func makeMessageRequestBody(
+        modelName: String,
+        messages: [Message],
+        systemPrompt: String?,
+        maxToken: Int,
+        temperature: Double,
+        stopSequences: [String]?,
+        reasoningEffort: ReasoningEffort?
+    ) -> MessageRequestBody {
+        MessageRequestBody(
+            model: modelName,
+            messages: messages,
+            system: systemPrompt,
+            max_tokens: maxToken,
+            temperature: temperature,
+            stop_sequences: stopSequences,
+            output_config: outputConfig(for: reasoningEffort)
+        )
     }
 
     func createMessages(from request: PromptStrategy) -> (messages: [Message], system: String?) {
@@ -124,13 +171,14 @@ extension AnthropicService {
             !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
 
-        let requestBody = MessageRequestBody(
-            model: modelName,
+        let requestBody = Self.makeMessageRequestBody(
+            modelName: modelName,
             messages: messages,
-            system: systemPrompt,
-            max_tokens: maxToken,
+            systemPrompt: systemPrompt,
+            maxToken: maxToken,
             temperature: temperature,
-            stop_sequences: validStopSequences
+            stopSequences: validStopSequences,
+            reasoningEffort: reasoningEffort
         )
 
         var request = URLRequest(url: url)
@@ -141,7 +189,10 @@ extension AnthropicService {
         request.setExtraHeaders(extraHeaders)
 
         let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
+        request.httpBody = CompletionJSON.mergeCustomBody(
+            try encoder.encode(requestBody),
+            jsonBody: customJSONBody
+        )
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(

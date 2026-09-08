@@ -11,6 +11,7 @@ public actor AzureOpenAIService {
     let temperature: Double
     let apiKey: String
     let stopWords: [String]
+    let extraHeaders: [(name: String, value: String)]
 
     init(
         url: String? = nil,
@@ -20,7 +21,8 @@ public actor AzureOpenAIService {
         maxToken: Int,
         temperature: Double = 0.2,
         stopWords: [String] = [],
-        apiKey: String
+        apiKey: String,
+        extraHeaders: [(name: String, value: String)] = []
     ) {
         self.url = url.flatMap(URL.init(string:)) ?? {
             switch endpoint {
@@ -38,6 +40,7 @@ public actor AzureOpenAIService {
         self.temperature = temperature
         self.stopWords = stopWords
         self.apiKey = apiKey
+        self.extraHeaders = extraHeaders
     }
 }
 
@@ -106,6 +109,7 @@ extension AzureOpenAIService {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "api-key")
+        request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(
             result: result,
@@ -143,6 +147,7 @@ extension AzureOpenAIService {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "api-key")
+        request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
         return try await CompletionHTTP.makeStream(
             result: result,
