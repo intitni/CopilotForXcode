@@ -1,9 +1,7 @@
 import AIModel
 import ComposableArchitecture
-import CustomSuggestionService
 import Preferences
-import Dependencies
-import SwiftUI
+import Toast
 
 @Reducer
 struct CompletionModelEdit {
@@ -16,11 +14,11 @@ struct CompletionModelEdit {
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
         var availableModelNames: [String] = []
-        var availableAPIKeys: [String] = []
         var suggestedMaxTokens: Int?
         var apiKeySelection: APIKeySelection.State = .init()
         var baseURLSelection: BaseURLSelection.State = .init()
         var ollamaKeepAlive: String = ""
+        var didSave = false
     }
 
     enum Action: Equatable, BindableAction {
@@ -35,11 +33,7 @@ struct CompletionModelEdit {
     }
 
     @Dependency(\.toast) var toast
-    @Dependency(\.apiKeyKeychain) var keychain
-
-    enum DebounceID: Hashable {
-        case save
-    }
+    @Dependency(\.userDefaults) var userDefaults
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -55,27 +49,43 @@ struct CompletionModelEdit {
         Reduce { state, action in
             switch action {
             case .appear:
+                state.didSave = false
                 return .run { send in
                     await send(.readCustomModelFromDisk)
                 }
 
             case .saveButtonClicked:
-                let model = CompletionModel(state: state)
-                return .run { _ in
-                    UserDefaults.shared.set(model, for: \.customSuggestionCompletionModel)
+                let modelName = state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let baseURL = state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !modelName.isEmpty else {
+                    toast("Model name cannot be empty", .error)
+                    return .none
                 }
+                guard !baseURL.isEmpty else {
+                    toast("Base URL cannot be empty", .error)
+                    return .none
+                }
+                userDefaults.set(CompletionModel(state: state), for: \.customSuggestionCompletionModel)
+                state.didSave = true
+                return .none
 
             case .refreshAvailableModelNames:
                 if state.format == .openAI {
-                    state.availableModelNames = CustomSuggestionService.OpenAIService.ChatCompletionModels.allCases
-                        .map(\.rawValue)
+                    state.availableModelNames = KnownCompletionModels.allCases.map(\.rawValue)
                 }
 
                 return .none
 
             case .readCustomModelFromDisk:
-                let model = UserDefaults.shared.value(for: \.customSuggestionCompletionModel)
-                state = model.toState()
+                let model = userDefaults.value(for: \.customSuggestionCompletionModel)
+                state.id = model.id
+                state.format = model.format
+                state.maxTokens = model.info.maxTokens
+                state.modelName = model.info.modelName
+                state.apiKeySelection.apiKeyName = model.info.apiKeyName
+                state.baseURLSelection.baseURL = model.info.baseURL
+                state.baseURLSelection.isFullURL = model.info.isFullURL
+                state.ollamaKeepAlive = model.info.ollamaInfo.keepAlive
 
                 return .run { send in
                     await send(.checkSuggestedMaxTokens)
@@ -85,7 +95,7 @@ struct CompletionModelEdit {
             case .checkSuggestedMaxTokens:
                 switch state.format {
                 case .openAI:
-                    if let knownModel = CustomSuggestionService.OpenAIService.CompletionModels(rawValue: state.modelName) {
+                    if let knownModel = KnownCompletionModels(rawValue: state.modelName) {
                         state.suggestedMaxTokens = knownModel.maxToken
                     } else {
                         state.suggestedMaxTokens = nil
@@ -153,4 +163,3 @@ extension CompletionModel {
         )
     }
 }
-

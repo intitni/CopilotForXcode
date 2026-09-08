@@ -3,7 +3,8 @@ import Foundation
 public enum BuiltInSuggestionFeatureProvider: Int, CaseIterable, Codable {
     case gitHubCopilot
     case codeium
-    case customModel
+    /// Not the next sequential Int: a persisted `2` from earlier builds will fail to decode.
+    case customModel = 1000
 }
 
 public enum SuggestionFeatureProvider: RawRepresentable, Hashable {

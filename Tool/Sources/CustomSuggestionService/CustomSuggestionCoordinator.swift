@@ -40,6 +40,11 @@ actor CustomSuggestionCoordinator {
     ) async throws -> [CodeSuggestion] {
         onGoingTask?.cancel()
         onGoingTask = nil
+        let snapshot = PreferenceSnapshot(
+            modelId: UserDefaults.shared.value(for: \.customSuggestionModelId),
+            chatModels: UserDefaults.shared.value(for: \.chatModels),
+            strategyId: UserDefaults.shared.value(for: \.customSuggestionRequestStrategyId)
+        )
         let task = Task {
             try await CodeCompletionLogger.$logger.withValue(.init(request: request)) {
                 do {
@@ -52,7 +57,8 @@ actor CustomSuggestionCoordinator {
                     let strategy = getStrategy(
                         sourceRequest: request,
                         prefix: previousLines,
-                        suffix: nextLines
+                        suffix: nextLines,
+                        snapshot: snapshot
                     )
 
                     if strategy.shouldSkip {
@@ -60,7 +66,7 @@ actor CustomSuggestionCoordinator {
                     }
 
                     let service = CodeCompletionService()
-                    let model = try getModel()
+                    let model = try getModel(snapshot)
                     let prompt = strategy.createPrompt()
                     let postProcessor = strategy.createRawSuggestionPostProcessor()
                     let stopStream = strategy.createStreamStopStrategy(model: model)
@@ -139,12 +145,22 @@ actor CustomSuggestionCoordinator {
             }
         }
         onGoingTask = task
-        return try await task.value
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
-    func getModel() throws -> Model {
-        let id = UserDefaults.shared.value(for: \.customSuggestionModelId)
-        let models = UserDefaults.shared.value(for: \.chatModels)
+    struct PreferenceSnapshot {
+        var modelId: String
+        var chatModels: [ChatModel]
+        var strategyId: String
+    }
+
+    func getModel(_ snapshot: PreferenceSnapshot) throws -> Model {
+        let id = snapshot.modelId
+        let models = snapshot.chatModels
         if let existedModel = models.first(where: { $0.id == id }) {
             return .chatModel(existedModel)
         }
@@ -176,10 +192,11 @@ actor CustomSuggestionCoordinator {
     func getStrategy(
         sourceRequest: SuggestionRequest,
         prefix: [String],
-        suffix: [String]
+        suffix: [String],
+        snapshot: PreferenceSnapshot
     ) -> any RequestStrategy {
-        let id = UserDefaults.shared.value(for: \.customSuggestionRequestStrategyId)
-        let type = CustomModelType(rawValue: UserDefaults.shared.value(for: \.customSuggestionModelId))
+        let id = snapshot.strategyId
+        let type = CustomModelType(rawValue: snapshot.modelId)
         if let type, type == .tabby {
             return TabbyRequestStrategy(
                 sourceRequest: sourceRequest,

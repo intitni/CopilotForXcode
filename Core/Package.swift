@@ -122,9 +122,9 @@ let package = Package(
         .target(
             name: "HostApp",
             dependencies: [
-                .product(name: "CustomSuggestionService", package: "Tool"),
                 "Client",
                 "LaunchAgentManager",
+                "UpdateChecker",
                 "PlusFeatureFlag",
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Toast", package: "Tool"),
@@ -139,6 +139,15 @@ let package = Package(
             ].pro([
                 "ProHostApp",
             ])
+        ),
+        .testTarget(
+            name: "HostAppTests",
+            dependencies: [
+                "HostApp",
+                .product(name: "Preferences", package: "Tool"),
+                .product(name: "Toast", package: "Tool"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            ]
         ),
 
         // MARK: - Suggestion Service

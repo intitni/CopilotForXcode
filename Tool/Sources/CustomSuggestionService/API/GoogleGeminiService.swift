@@ -57,19 +57,6 @@ extension GoogleGeminiService: CodeCompletionServiceType {
     }
 }
 
-public extension GoogleGeminiService {
-    enum KnownModels: String, CaseIterable {
-        case geminiPro = "gemini-pro"
-
-        public var maxToken: Int {
-            switch self {
-            case .geminiPro:
-                return 32768
-            }
-        }
-    }
-}
-
 extension GoogleGeminiService {
     public enum Error: Swift.Error, LocalizedError {
         case apiError(Swift.Error)

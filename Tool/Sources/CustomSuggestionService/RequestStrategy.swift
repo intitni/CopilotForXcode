@@ -1,6 +1,7 @@
 import CopilotForXcodeKit
 import Foundation
 import AIModel
+import Preferences
 
 /// Prompts may behave differently in different LLMs.
 /// This protocol allows for different strategies to be used to generate prompts.
@@ -23,15 +24,6 @@ protocol RequestStrategy {
     /// The AI model may not return a suggestion in a ideal format. You can use it to reformat the
     /// suggestions.
     func createRawSuggestionPostProcessor() -> RawSuggestionPostProcessor
-}
-
-public enum RequestStrategyOption: String, CaseIterable, Codable {
-    case `default` = ""
-    case naive
-    case `continue`
-    case codeLlamaFillInTheMiddle
-    case codeLlamaFillInTheMiddleWithSystemPrompt
-    case anthropic
 }
 
 extension RequestStrategyOption {

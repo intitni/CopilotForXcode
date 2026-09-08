@@ -3,8 +3,7 @@ import Foundation
 
 /// Preference keys of the built-in custom model suggestion provider.
 ///
-/// The raw key strings keep the `CustomSuggestionService-` prefix used by the original standalone
-/// "Custom Suggestion Service for Copilot for Xcode" app.
+/// 键名沿用独立 App，但不迁移其配置；旧值 `chatModel` 视为无效模型。
 public extension UserDefaultPreferenceKeys {
     /// Either a `CustomModelType` raw value, or the id of a chat model in ``chatModels``.
     var customSuggestionModelId: PreferenceKey<String> {

@@ -1,7 +1,5 @@
 import AIModel
 import ComposableArchitecture
-import CustomSuggestionService
-import Preferences
 import SwiftUI
 
 @MainActor
@@ -31,7 +29,6 @@ struct TabbyModelEditView: View {
 
                         Button(action: {
                             store.send(.saveButtonClicked)
-                            dismiss()
                         }) {
                             Text("Save")
                         }
@@ -43,6 +40,9 @@ struct TabbyModelEditView: View {
             .textFieldStyle(.roundedBorder)
             .onAppear {
                 store.send(.appear)
+            }
+            .onChange(of: store.didSave) { didSave in
+                if didSave { dismiss() }
             }
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -73,33 +73,16 @@ struct TabbyModelEditView: View {
         .pickerStyle(.segmented)
     }
 
-    func urlTextField(
-        title: String = "URL",
-        prompt: Text?
-    ) -> some View {
-        BaseURLPicker(
-            title: title,
-            prompt: prompt,
+    @ViewBuilder
+    var form: some View {
+        BaseURLTextField(
+            title: "URL",
+            prompt: Text("http://127.0.0.1:8080/v1/completions"),
             store: store.scope(
                 state: \.urlSelection,
                 action: \.urlSelection
             )
-        ) {
-            EmptyView()
-        }
-    }
-
-    @ViewBuilder
-    func apiKeyNamePicker(title: String = "API Key") -> some View {
-        APIKeyPicker(store: store.scope(
-            state: \.apiKeySelection,
-            action: \.apiKeySelection
-        ), title: title)
-    }
-
-    @ViewBuilder
-    var form: some View {
-        urlTextField(prompt: Text("http://127.0.0.1:8080/v1/completions"))
+        )
         authorizationModePicker
 
         switch store.authorizationMode {
@@ -107,12 +90,30 @@ struct TabbyModelEditView: View {
             EmptyView()
         case .basic:
             TextField("Username", text: $store.username)
-            apiKeyNamePicker(title: "Password")
+            ApiKeyNamePicker(
+                store: store.scope(
+                    state: \.apiKeySelection,
+                    action: \.apiKeySelection
+                ),
+                title: "Password"
+            )
         case .customHeaderField:
             TextField("Header Name", text: $store.authorizationHeaderName)
-            apiKeyNamePicker(title: "Value")
+            ApiKeyNamePicker(
+                store: store.scope(
+                    state: \.apiKeySelection,
+                    action: \.apiKeySelection
+                ),
+                title: "Value"
+            )
         case .bearerToken:
-            apiKeyNamePicker(title: "Token")
+            ApiKeyNamePicker(
+                store: store.scope(
+                    state: \.apiKeySelection,
+                    action: \.apiKeySelection
+                ),
+                title: "Token"
+            )
         }
     }
 }
@@ -164,4 +165,3 @@ struct TabbyModelEditView: View {
         )
     )
 }
-

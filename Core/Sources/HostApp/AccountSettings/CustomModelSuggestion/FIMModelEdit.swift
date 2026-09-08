@@ -1,9 +1,7 @@
 import AIModel
 import ComposableArchitecture
-import CustomSuggestionService
 import Preferences
-import Dependencies
-import SwiftUI
+import Toast
 
 @Reducer
 struct FIMModelEdit {
@@ -16,13 +14,13 @@ struct FIMModelEdit {
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
         var availableModelNames: [String] = []
-        var availableAPIKeys: [String] = []
         var suggestedMaxTokens: Int?
         var apiKeySelection: APIKeySelection.State = .init()
         var baseURLSelection: BaseURLSelection.State = .init()
         var ollamaKeepAlive: String = ""
         var authenticationMode: FIMModel.Info.AuthenticationMode = .bearerToken
         var authenticationHeaderFieldName: String = ""
+        var didSave = false
     }
 
     enum Action: Equatable, BindableAction {
@@ -37,11 +35,7 @@ struct FIMModelEdit {
     }
 
     @Dependency(\.toast) var toast
-    @Dependency(\.apiKeyKeychain) var keychain
-
-    enum DebounceID: Hashable {
-        case save
-    }
+    @Dependency(\.userDefaults) var userDefaults
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -57,15 +51,25 @@ struct FIMModelEdit {
         Reduce { state, action in
             switch action {
             case .appear:
+                state.didSave = false
                 return .run { send in
                     await send(.readCustomModelFromDisk)
                 }
 
             case .saveButtonClicked:
-                let model = FIMModel(state: state)
-                return .run { _ in
-                    UserDefaults.shared.set(model, for: \.customSuggestionFIMModel)
+                let modelName = state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let baseURL = state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !modelName.isEmpty else {
+                    toast("Model name cannot be empty", .error)
+                    return .none
                 }
+                guard !baseURL.isEmpty else {
+                    toast("Base URL cannot be empty", .error)
+                    return .none
+                }
+                userDefaults.set(FIMModel(state: state), for: \.customSuggestionFIMModel)
+                state.didSave = true
+                return .none
 
             case .refreshAvailableModelNames:
                 if state.format == .mistral {
@@ -78,8 +82,17 @@ struct FIMModelEdit {
                 return .none
 
             case .readCustomModelFromDisk:
-                let model = UserDefaults.shared.value(for: \.customSuggestionFIMModel)
-                state = model.toState()
+                let model = userDefaults.value(for: \.customSuggestionFIMModel)
+                state.id = model.id
+                state.format = model.format
+                state.maxTokens = model.info.maxTokens
+                state.modelName = model.info.modelName
+                state.apiKeySelection.apiKeyName = model.info.apiKeyName
+                state.baseURLSelection.baseURL = model.info.baseURL
+                state.baseURLSelection.isFullURL = model.info.isFullURL
+                state.ollamaKeepAlive = model.info.ollamaInfo.keepAlive
+                state.authenticationMode = model.info.authenticationMode
+                state.authenticationHeaderFieldName = model.info.authenticationHeaderFieldName
 
                 return .run { send in
                     await send(.checkSuggestedMaxTokens)
@@ -141,7 +154,7 @@ extension FIMModel {
     init(state: FIMModelEdit.State) {
         self.init(
             id: state.id,
-            name: "Custom Model (Completion API)",
+            name: "Custom Model (FIM API)",
             format: state.format,
             info: .init(
                 apiKeyName: state.apiKeyName,
@@ -156,4 +169,3 @@ extension FIMModel {
         )
     }
 }
-

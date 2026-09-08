@@ -1,7 +1,5 @@
 import AIModel
 import ComposableArchitecture
-import CustomSuggestionService
-import Preferences
 import SwiftUI
 
 @MainActor
@@ -44,7 +42,6 @@ struct CompletionModelEditView: View {
 
                         Button(action: {
                             store.send(.saveButtonClicked)
-                            dismiss()
                         }) {
                             Text("Save")
                         }
@@ -56,6 +53,9 @@ struct CompletionModelEditView: View {
             .textFieldStyle(.roundedBorder)
             .onAppear {
                 store.send(.appear)
+            }
+            .onChange(of: store.didSave) { didSave in
+                if didSave { dismiss() }
             }
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -93,7 +93,7 @@ struct CompletionModelEditView: View {
         prompt: Text?,
         @ViewBuilder trailingContent: @escaping () -> V
     ) -> some View {
-        BaseURLPicker(
+        BaseURLTextField(
             title: title,
             prompt: prompt,
             store: store.scope(
@@ -111,62 +111,15 @@ struct CompletionModelEditView: View {
         baseURLTextField(title: title, prompt: prompt, trailingContent: { EmptyView() })
     }
 
-    var maxTokensTextField: some View {
-        HStack {
-            let textFieldBinding = Binding(
-                get: { String(store.maxTokens) },
-                set: {
-                    if let selectionMaxToken = Int($0) {
-                        $store.maxTokens.wrappedValue = selectionMaxToken
-                    } else {
-                        $store.maxTokens.wrappedValue = 0
-                    }
-                }
-            )
-
-            TextField(text: textFieldBinding) {
-                Text("Context Window")
-                    .multilineTextAlignment(.trailing)
-            }
-            .overlay(alignment: .trailing) {
-                Stepper(
-                    value: $store.maxTokens,
-                    in: 0...Int.max,
-                    step: 100
-                ) {
-                    EmptyView()
-                }
-            }
-            .foregroundColor({
-                guard let max = store.suggestedMaxTokens else {
-                    return .primary
-                }
-                if store.maxTokens > max {
-                    return .red
-                }
-                return .primary
-            }() as Color)
-
-            if let max = store.suggestedMaxTokens {
-                Text("Max: \(max)")
-            }
-        }
-    }
-
-    @ViewBuilder
-    var apiKeyNamePicker: some View {
-        APIKeyPicker(store: store.scope(
-            state: \.apiKeySelection,
-            action: \.apiKeySelection
-        ))
-    }
-
     @ViewBuilder
     var openAI: some View {
         baseURLTextField(prompt: Text("https://api.openai.com")) {
             Text("/v1/completions")
         }
-        apiKeyNamePicker
+        ApiKeyNamePicker(store: store.scope(
+            state: \.apiKeySelection,
+            action: \.apiKeySelection
+        ))
 
         TextField("Model Name", text: $store.modelName)
             .overlay(alignment: .trailing) {
@@ -174,18 +127,21 @@ struct CompletionModelEditView: View {
                     "",
                     selection: $store.modelName,
                     content: {
-                        if CustomSuggestionService.OpenAIService.ChatCompletionModels(rawValue: store.modelName) == nil {
+                        if !store.availableModelNames.contains(store.modelName) {
                             Text("Custom Model").tag(store.modelName)
                         }
-                        ForEach(CustomSuggestionService.OpenAIService.ChatCompletionModels.allCases, id: \.self) { model in
-                            Text(model.rawValue).tag(model.rawValue)
+                        ForEach(store.availableModelNames, id: \.self) { model in
+                            Text(model).tag(model)
                         }
                     }
                 )
                 .frame(width: 20)
             }
 
-        maxTokensTextField
+        MaxTokensTextField(
+            maxTokens: $store.maxTokens,
+            suggestedMaxTokens: store.suggestedMaxTokens
+        )
 
         VStack(alignment: .leading, spacing: 8) {
             Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
@@ -198,11 +154,17 @@ struct CompletionModelEditView: View {
     @ViewBuilder
     var azureOpenAI: some View {
         baseURLTextField(prompt: Text("https://xxxx.openai.azure.com"))
-        apiKeyNamePicker
+        ApiKeyNamePicker(store: store.scope(
+            state: \.apiKeySelection,
+            action: \.apiKeySelection
+        ))
 
         TextField("Deployment Name", text: $store.modelName)
 
-        maxTokensTextField
+        MaxTokensTextField(
+            maxTokens: $store.maxTokens,
+            suggestedMaxTokens: store.suggestedMaxTokens
+        )
     }
 
     @ViewBuilder
@@ -227,35 +189,17 @@ struct CompletionModelEditView: View {
                 Text("/v1/completions")
             }
         }
-        apiKeyNamePicker
+        ApiKeyNamePicker(store: store.scope(
+            state: \.apiKeySelection,
+            action: \.apiKeySelection
+        ))
 
         TextField("Model Name", text: $store.modelName)
 
-        maxTokensTextField
-    }
-
-    @ViewBuilder
-    var googleAI: some View {
-        apiKeyNamePicker
-
-        TextField("Model Name", text: $store.modelName)
-            .overlay(alignment: .trailing) {
-                Picker(
-                    "",
-                    selection: $store.modelName,
-                    content: {
-                        if GoogleGeminiService.KnownModels(rawValue: store.modelName) == nil {
-                            Text("Custom Model").tag(store.modelName)
-                        }
-                        ForEach(GoogleGeminiService.KnownModels.allCases, id: \.self) { model in
-                            Text(model.rawValue).tag(model.rawValue)
-                        }
-                    }
-                )
-                .frame(width: 20)
-            }
-
-        maxTokensTextField
+        MaxTokensTextField(
+            maxTokens: $store.maxTokens,
+            suggestedMaxTokens: store.suggestedMaxTokens
+        )
     }
 
     @ViewBuilder
@@ -269,12 +213,15 @@ struct CompletionModelEditView: View {
 
         TextField("Model Name", text: $store.modelName)
 
-        maxTokensTextField
-        
+        MaxTokensTextField(
+            maxTokens: $store.maxTokens,
+            suggestedMaxTokens: store.suggestedMaxTokens
+        )
+
         TextField(text: $store.ollamaKeepAlive, prompt: Text("Default Value")) {
             Text("Keep Alive")
         }
-        
+
         VStack(alignment: .leading, spacing: 8) {
             Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                 " For more details, please visit [https://ollama.com](https://ollama.com)"
@@ -321,4 +268,3 @@ struct CompletionModelEditView: View {
         )
     )
 }
-

@@ -1,9 +1,8 @@
 import AIModel
 import ComposableArchitecture
-import CustomSuggestionService
+import Foundation
 import Preferences
-import Dependencies
-import SwiftUI
+import Toast
 
 @Reducer
 struct TabbyModelEdit {
@@ -16,6 +15,7 @@ struct TabbyModelEdit {
         var authorizationMode: TabbyModel.AuthorizationMode
         var authorizationHeaderName: String
         var username: String
+        var didSave = false
     }
 
     enum Action: Equatable, BindableAction {
@@ -28,11 +28,7 @@ struct TabbyModelEdit {
     }
 
     @Dependency(\.toast) var toast
-    @Dependency(\.apiKeyKeychain) var keychain
-
-    enum DebounceID: Hashable {
-        case save
-    }
+    @Dependency(\.userDefaults) var userDefaults
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -48,19 +44,28 @@ struct TabbyModelEdit {
         Reduce { state, action in
             switch action {
             case .appear:
+                state.didSave = false
                 return .run { send in
                     await send(.readCustomModelFromDisk)
                 }
 
             case .saveButtonClicked:
-                let model = TabbyModel(state: state)
-                return .run { _ in
-                    UserDefaults.shared.set(model, for: \.customSuggestionTabbyModel)
+                let urlString = state.url.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let url = URL(string: urlString), url.scheme != nil, url.host != nil else {
+                    toast("URL is invalid", .error)
+                    return .none
                 }
+                userDefaults.set(TabbyModel(state: state), for: \.customSuggestionTabbyModel)
+                state.didSave = true
+                return .none
 
             case .readCustomModelFromDisk:
-                let model = UserDefaults.shared.value(for: \.customSuggestionTabbyModel)
-                state = model.toState()
+                let model = userDefaults.value(for: \.customSuggestionTabbyModel)
+                state.apiKeySelection.apiKeyName = model.apiKeyName
+                state.urlSelection.baseURL = model.url
+                state.authorizationMode = model.authorizationMode
+                state.authorizationHeaderName = model.authorizationHeaderName
+                state.username = model.username
                 return .none
 
             case .apiKeySelection:
@@ -93,7 +98,7 @@ extension TabbyModel {
 
     init(state: TabbyModelEdit.State) {
         self = .init(
-            url: state.urlSelection.baseURL,
+            url: state.urlSelection.baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
             authorizationMode: state.authorizationMode,
             apiKeyName: state.apiKeySelection.apiKeyName,
             authorizationHeaderName: state.authorizationHeaderName,
@@ -101,4 +106,3 @@ extension TabbyModel {
         )
     }
 }
-

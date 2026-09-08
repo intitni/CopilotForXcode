@@ -196,6 +196,13 @@
         "identifier" : "CustomSuggestionServiceTests",
         "name" : "CustomSuggestionServiceTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "HostAppTests",
+        "name" : "HostAppTests"
+      }
     }
   ],
   "version" : 1

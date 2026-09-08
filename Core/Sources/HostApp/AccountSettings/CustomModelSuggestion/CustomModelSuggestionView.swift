@@ -1,6 +1,5 @@
 import AIModel
 import ComposableArchitecture
-import CustomSuggestionService
 import Preferences
 import SwiftUI
 
