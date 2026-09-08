@@ -55,7 +55,7 @@ public final class CodeCompletionLogger {
 
     public func logModel(_ completionModel: CompletionModel) {
         model = .init(
-            type: "Chat Completion",
+            type: "Completion",
             format: completionModel.format.rawValue,
             modelName: completionModel.info.modelName,
             baseURL: completionModel.info.baseURL

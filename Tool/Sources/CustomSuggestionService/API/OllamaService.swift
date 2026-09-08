@@ -47,9 +47,9 @@ public actor OllamaService {
         self.url = url.flatMap(URL.init(string:)) ?? {
             switch endpoint {
             case .chatCompletion:
-                URL(string: "https://127.0.0.1:11434/api/chat")!
+                URL(string: "http://127.0.0.1:11434/api/chat")!
             case .completion, .completionWithSuffix:
-                URL(string: "https://127.0.0.1:11434/api/generate")!
+                URL(string: "http://127.0.0.1:11434/api/generate")!
             }
         }()
 
@@ -307,10 +307,6 @@ extension OllamaService {
             parseBody: { try Self.parseChunkBody($0, url: url) },
             parseLine: Self.parseStreamLine
         )
-    }
-
-    func countToken(_ message: Message) -> Int {
-        message.content.count
     }
 }
 

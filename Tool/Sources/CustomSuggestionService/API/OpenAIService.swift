@@ -23,10 +23,16 @@ public actor OpenAIService {
     let customJSONBody: String
     let requiresBeginWithUserMessage: Bool
     let enforceMessageOrder: Bool
+    let authentication: Authentication
 
     public enum Endpoint {
         case completion
         case chatCompletion
+    }
+
+    public enum Authentication {
+        case bearer
+        case apiKeyHeader
     }
 
     init(
@@ -38,6 +44,7 @@ public actor OpenAIService {
         temperature: Double = 0.2,
         stopWords: [String] = [],
         apiKey: String,
+        authentication: Authentication = .bearer,
         reasoningEffort: ReasoningEffort? = nil,
         reasoningTokenBudget: Int = 1500,
         extraHeaders: [(name: String, value: String)] = [],
@@ -46,7 +53,8 @@ public actor OpenAIService {
         customJSONBody: String = "",
         requiresBeginWithUserMessage: Bool = false,
         enforceMessageOrder: Bool = false
-    ) {
+    ) throws {
+        self.authentication = authentication
         self.reasoningEffort = reasoningEffort
         self.reasoningTokenBudget = reasoningTokenBudget
         self.extraHeaders = extraHeaders
@@ -55,14 +63,11 @@ public actor OpenAIService {
         self.customJSONBody = customJSONBody
         self.requiresBeginWithUserMessage = requiresBeginWithUserMessage
         self.enforceMessageOrder = enforceMessageOrder
-        self.url = url.flatMap(URL.init(string:)) ?? {
-            switch endpoint {
-            case .chatCompletion:
-                URL(string: "https://api.openai.com/v1/chat/completions")!
-            case .completion:
-                URL(string: "https://api.openai.com/v1/completions")!
-            }
-        }()
+        self.url = try Self.resolveURL(
+            url: url,
+            authentication: authentication,
+            endpoint: endpoint
+        )
 
         self.endpoint = endpoint
         self.modelName = modelName
@@ -71,6 +76,54 @@ public actor OpenAIService {
         self.apiKey = apiKey
         self.stopWords = stopWords
         self.contextWindow = contextWindow
+    }
+
+    nonisolated static let missingAzureEndpointMessage =
+        "Azure OpenAI endpoint is empty. Set the resource base URL."
+
+    /// Matches `ChatModel.endpoint` / `CompletionModel.endpoint` Azure branches.
+    nonisolated static func azureEndpoint(
+        baseURL: String,
+        deployment: String,
+        endpoint: Endpoint
+    ) -> String {
+        switch endpoint {
+        case .chatCompletion:
+            let version = "2024-09-01-preview"
+            if baseURL.isEmpty { return "" }
+            return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
+        case .completion:
+            let version = "2023-07-01-preview"
+            if baseURL.isEmpty { return "" }
+            return "\(baseURL)/openai/deployments/\(deployment)/completions?api-version=\(version)"
+        }
+    }
+
+    /// Azure (`api-key`) must not fall back to api.openai.com.
+    nonisolated static func resolveURL(
+        url: String?,
+        authentication: Authentication,
+        endpoint: Endpoint
+    ) throws -> URL {
+        if let url, !url.isEmpty, let parsed = URL(string: url) {
+            if authentication == .apiKeyHeader, isOpenAIAPIHost(parsed) {
+                throw Error.otherError(missingAzureEndpointMessage)
+            }
+            return parsed
+        }
+        if authentication == .apiKeyHeader {
+            throw Error.otherError(missingAzureEndpointMessage)
+        }
+        switch endpoint {
+        case .chatCompletion:
+            return URL(string: "https://api.openai.com/v1/chat/completions")!
+        case .completion:
+            return URL(string: "https://api.openai.com/v1/completions")!
+        }
+    }
+
+    nonisolated static func isOpenAIAPIHost(_ url: URL) -> Bool {
+        url.host == "api.openai.com"
     }
 }
 
@@ -99,30 +152,16 @@ extension OpenAIService: CodeCompletionServiceType {
 }
 
 public extension OpenAIService {
-    struct APIError: Decodable {
-        var message: String
-        var type: String
-        var param: String
-        var code: String
-    }
-
     enum Error: Swift.Error, LocalizedError {
-        case decodeError(Swift.Error)
         case apiError(String)
         case otherError(String)
 
         public var errorDescription: String? {
             switch self {
-            case let .decodeError(error):
-                return error.localizedDescription
             case let .apiError(message), let .otherError(message):
                 return message
             }
         }
-    }
-
-    func countToken(_ message: Message) -> Int {
-        message.content.count
     }
 }
 
@@ -223,7 +262,7 @@ extension OpenAIService {
             jsonBody: customJSONBody
         )
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        applyAuthentication(to: &request)
         request.setOpenAIIdentityHeaders(organizationID: organizationID, projectID: projectID)
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)
@@ -234,6 +273,15 @@ extension OpenAIService {
             parseBody: { try Self.parseChatCompletionsBody($0, url: url) },
             parseLine: Self.parseChatCompletionsStreamLine
         )
+    }
+
+    func applyAuthentication(to request: inout URLRequest) {
+        switch authentication {
+        case .bearer:
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        case .apiKeyHeader:
+            request.setValue(apiKey, forHTTPHeaderField: "api-key")
+        }
     }
 
     /// Parses a non-streaming `application/json` chat completions body.
@@ -452,7 +500,7 @@ extension OpenAIService {
             jsonBody: customJSONBody
         )
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        applyAuthentication(to: &request)
         request.setOpenAIIdentityHeaders(organizationID: organizationID, projectID: projectID)
         request.setExtraHeaders(extraHeaders)
         let (result, response) = try await URLSession.shared.bytes(for: request)

@@ -40,20 +40,6 @@ public actor AnthropicService {
         self.stopWords = stopWords
         self.contextWindow = contextWindow
     }
-
-    public enum Models: String, CaseIterable {
-        case claude3Opus = "claude-3-opus-latest"
-        case claude35Sonnet = "claude-3-5-sonnet-latest"
-        case claude35Haiku = "claude-3-5-haiku-latest"
-
-        public var maxToken: Int {
-            switch self {
-            case .claude3Opus: return 200_000
-            case .claude35Sonnet: return 200_000
-            case .claude35Haiku: return 200_000
-            }
-        }
-    }
 }
 
 // MARK: - CodeCompletionServiceType Implementation
@@ -290,16 +276,6 @@ extension AnthropicService {
             case let .otherError(message):
                 return message
             }
-        }
-    }
-}
-
-// MARK: - Helper Methods
-
-extension AnthropicService {
-    func validateResponse(_ response: HTTPURLResponse) throws {
-        guard (200 ... 299).contains(response.statusCode) else {
-            throw Error.otherError("HTTP Error: \(response.statusCode)")
         }
     }
 }

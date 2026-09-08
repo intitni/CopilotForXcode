@@ -231,7 +231,10 @@ struct ChatAPIOptionsPicker: View {
         let format = selectedModel?.format
         let currentOptions = options
         let showsEndpoint = format == .openAI || format == .openAICompatible
-        let showsEffort = format == .openAI || format == .openAICompatible || format == .claude
+        let showsEffort = format == .openAI || format == .openAICompatible
+            || format == .claude || format == .azureOpenAI
+        let showsBudget = format == .openAI || format == .openAICompatible
+            || format == .azureOpenAI
 
         if showsEndpoint {
             Picker(
@@ -271,7 +274,7 @@ struct ChatAPIOptionsPicker: View {
             }
         }
 
-        if showsEndpoint, currentOptions.reasoningEffort != nil {
+        if showsBudget, currentOptions.reasoningEffort != nil {
             NumberInput(
                 value: Binding(
                     get: { currentOptions.reasoningTokenBudget },

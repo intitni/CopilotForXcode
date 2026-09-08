@@ -238,6 +238,104 @@ final class ChatAPIOptionsAndSemanticsTests: XCTestCase {
         XCTAssertEqual(result, "hello")
     }
 
+    func test_azure_format_reasoning_request_body_contains_max_completion_tokens() throws {
+        let chat = ChatModel(
+            id: "azure-chat",
+            name: "Azure Chat",
+            format: .azureOpenAI,
+            info: .init(
+                apiKeyName: "azure",
+                baseURL: "https://example.openai.azure.com",
+                maxTokens: 8000,
+                modelName: "gpt-4o"
+            )
+        )
+        XCTAssertEqual(
+            chat.endpoint,
+            OpenAIService.azureEndpoint(
+                baseURL: chat.info.baseURL,
+                deployment: chat.info.modelName,
+                endpoint: .chatCompletion
+            )
+        )
+        XCTAssertEqual(
+            OpenAIService.azureEndpoint(
+                baseURL: "",
+                deployment: "gpt-4o",
+                endpoint: .chatCompletion
+            ),
+            ""
+        )
+        XCTAssertEqual(
+            try OpenAIService.resolveURL(
+                url: chat.endpoint,
+                authentication: .apiKeyHeader,
+                endpoint: .chatCompletion
+            ).absoluteString,
+            chat.endpoint
+        )
+        XCTAssertTrue(chat.endpoint.contains("api-version=2024-09-01-preview"))
+
+        XCTAssertThrowsError(
+            try OpenAIService.resolveURL(
+                url: "",
+                authentication: .apiKeyHeader,
+                endpoint: .chatCompletion
+            )
+        ) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                OpenAIService.missingAzureEndpointMessage
+            )
+        }
+        XCTAssertThrowsError(
+            try OpenAIService.resolveURL(
+                url: "https://api.openai.com/v1/chat/completions",
+                authentication: .apiKeyHeader,
+                endpoint: .chatCompletion
+            )
+        ) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                OpenAIService.missingAzureEndpointMessage
+            )
+        }
+
+        let completion = CompletionModel(
+            id: "azure-completion",
+            name: "Azure Completion",
+            format: .azureOpenAI,
+            info: .init(
+                baseURL: "https://example.openai.azure.com",
+                modelName: "gpt-35-turbo-instruct"
+            )
+        )
+        XCTAssertEqual(
+            completion.endpoint,
+            OpenAIService.azureEndpoint(
+                baseURL: completion.info.baseURL,
+                deployment: completion.info.modelName,
+                endpoint: .completion
+            )
+        )
+
+        let body = OpenAIService.makeChatCompletionRequestBody(
+            modelName: chat.info.modelName,
+            messages: [.init(role: .user, content: "hi")],
+            temperature: 0.2,
+            stopWords: ["\n\n"],
+            maxToken: 200,
+            reasoningEffort: .high,
+            reasoningTokenBudget: 1500
+        )
+        let json = try jsonObject(body)
+        XCTAssertEqual((json["max_completion_tokens"] as? NSNumber)?.intValue, 1700)
+        XCTAssertEqual(json["reasoning_effort"] as? String, "high")
+        XCTAssertNil(json["max_tokens"])
+        XCTAssertNil(json["temperature"])
+        XCTAssertNil(json["stop"])
+    }
+
     func test_customBodyInfo_joinJSON_merge() throws {
         let original = Data(#"{"model":"a","stream":true}"#.utf8)
         let merged = CompletionJSON.mergeCustomBody(

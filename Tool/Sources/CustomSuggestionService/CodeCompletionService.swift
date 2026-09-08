@@ -153,7 +153,7 @@ public struct CodeCompletionService {
                 try Task.checkCancellation()
                 return result
             case .chatCompletions:
-                let service = OpenAIService(
+                let service = try OpenAIService(
                     url: model.endpoint,
                     endpoint: .chatCompletion,
                     modelName: model.info.modelName,
@@ -180,7 +180,7 @@ public struct CodeCompletionService {
                 return result
             }
         case .azureOpenAI:
-            let service = AzureOpenAIService(
+            let service = try OpenAIService(
                 url: model.endpoint,
                 endpoint: .chatCompletion,
                 modelName: model.info.modelName,
@@ -188,6 +188,9 @@ public struct CodeCompletionService {
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 stopWords: prompt.stopWords,
                 apiKey: apiKey,
+                authentication: .apiKeyHeader,
+                reasoningEffort: options.reasoningEffort,
+                reasoningTokenBudget: options.reasoningTokenBudget,
                 extraHeaders: options.extraHeaders
             )
             let result = try await service.getCompletions(
@@ -266,7 +269,7 @@ public struct CodeCompletionService {
 
         switch model.format {
         case .openAI, .openAICompatible:
-            let service = OpenAIService(
+            let service = try OpenAIService(
                 url: model.endpoint,
                 endpoint: .completion,
                 modelName: model.info.modelName,
@@ -283,14 +286,15 @@ public struct CodeCompletionService {
             try Task.checkCancellation()
             return result
         case .azureOpenAI:
-            let service = AzureOpenAIService(
+            let service = try OpenAIService(
                 url: model.endpoint,
                 endpoint: .completion,
                 modelName: model.info.modelName,
                 contextWindow: model.info.maxTokens,
                 maxToken: UserDefaults.shared.value(for: \.customSuggestionMaxGenerationToken),
                 stopWords: prompt.stopWords,
-                apiKey: apiKey
+                apiKey: apiKey,
+                authentication: .apiKeyHeader
             )
             let result = try await service.getCompletions(
                 prompt,

@@ -167,7 +167,7 @@ class ChatAPIStreamParsingTests: XCTestCase {
         URLProtocol.registerClass(CompletionStubURLProtocol.self)
         defer { CompletionStubURLProtocol.reset() }
 
-        let service = OpenAIService(
+        let service = try OpenAIService(
             url: "http://\(host)/v1/chat/completions",
             endpoint: .chatCompletion,
             modelName: "gpt-5.5",
@@ -191,6 +191,85 @@ class ChatAPIStreamParsingTests: XCTestCase {
         }
         await fulfillment(of: [didFinish], timeout: 2)
         task.cancel()
+    }
+
+    func test_azure_reasoning_request_sends_api_key_header_and_max_completion_tokens() async throws {
+        let host = "wp6-azure-\(UUID().uuidString).invalid"
+        final class Capture: @unchecked Sendable {
+            var request: URLRequest?
+        }
+        let capture = Capture()
+        CompletionStubURLProtocol.host = host
+        CompletionStubURLProtocol.handler = { request in
+            capture.request = request
+            let sse = #"data: {"choices":[{"index":0,"delta":{"content":"ok"},"finish_reason":"stop"}]}"#
+                + "\n\ndata: [DONE]\n"
+            return (200, ["Content-Type": "text/event-stream"], Data(sse.utf8))
+        }
+        URLProtocol.registerClass(CompletionStubURLProtocol.self)
+        defer { CompletionStubURLProtocol.reset() }
+
+        let model = ChatModel(
+            id: "azure",
+            name: "Azure",
+            format: .azureOpenAI,
+            info: .init(
+                apiKeyName: "azure",
+                baseURL: "http://\(host)",
+                modelName: "gpt-4o"
+            )
+        )
+        // Same initializer as CodeCompletionService `.azureOpenAI` chat.
+        let service = try OpenAIService(
+            url: model.endpoint,
+            endpoint: .chatCompletion,
+            modelName: model.info.modelName,
+            contextWindow: 8000,
+            maxToken: 200,
+            apiKey: "azure-key",
+            authentication: .apiKeyHeader,
+            reasoningEffort: .high,
+            reasoningTokenBudget: 1500
+        )
+        let didFinish = expectation(description: "azure stream")
+        let task = Task {
+            do {
+                let stream = try await service.getCompletion(ErrorVisibilityPrompt())
+                var text = ""
+                for try await part in stream {
+                    text += part
+                }
+                XCTAssertEqual(text, "ok")
+            } catch {
+                XCTFail("unexpected error: \(error)")
+            }
+            didFinish.fulfill()
+        }
+        await fulfillment(of: [didFinish], timeout: 2)
+        task.cancel()
+
+        let request = try XCTUnwrap(capture.request)
+        XCTAssertEqual(request.value(forHTTPHeaderField: "api-key"), "azure-key")
+        XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+        let requestURL = try XCTUnwrap(request.url)
+        XCTAssertTrue(
+            requestURL.path.contains("/openai/deployments/"),
+            requestURL.path
+        )
+        XCTAssertTrue(
+            requestURL.path.hasSuffix("/chat/completions"),
+            requestURL.path
+        )
+        XCTAssertEqual(
+            URLComponents(url: requestURL, resolvingAgainstBaseURL: false)?
+                .queryItems?.first(where: { $0.name == "api-version" })?.value,
+            "2024-09-01-preview"
+        )
+        let body = try XCTUnwrap(httpBody(of: request))
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+        XCTAssertEqual((json["max_completion_tokens"] as? NSNumber)?.intValue, 1700)
+        XCTAssertEqual(json["reasoning_effort"] as? String, "high")
+        XCTAssertNil(json["max_tokens"])
     }
 
     func test_tabby_http_500_throws_immediately() async {
@@ -273,6 +352,22 @@ private struct ErrorVisibilityPrompt: PromptStrategy {
     ) -> [PromptMessage] {
         [.init(role: .user, content: truncatedPrefix.joined())]
     }
+}
+
+private func httpBody(of request: URLRequest) -> Data? {
+    if let body = request.httpBody { return body }
+    guard let stream = request.httpBodyStream else { return nil }
+    stream.open()
+    defer { stream.close() }
+    var data = Data()
+    let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 4096)
+    defer { buffer.deallocate() }
+    while stream.hasBytesAvailable {
+        let count = stream.read(buffer, maxLength: 4096)
+        if count <= 0 { break }
+        data.append(buffer, count: count)
+    }
+    return data
 }
 
 private final class CompletionStubURLProtocol: URLProtocol {
