@@ -43,6 +43,7 @@ struct General {
     @Dependency(\.toast) var toast
 
     struct ReloadStatusCancellableId: Hashable {}
+    struct SetupLaunchAgentCancellableId: Hashable {}
 
     static var didWarnInstallationPosition: Bool {
         get { UserDefaults.standard.bool(forKey: "didWarnInstallationPosition") }
@@ -96,11 +97,12 @@ struct General {
                     do {
                         try await LaunchAgentManager()
                             .setupLaunchAgentForTheFirstTimeIfNeeded()
+                    } catch is CancellationError {
                     } catch {
                         toast(error.localizedDescription, .error)
                     }
                     await send(.reloadStatus)
-                }
+                }.cancellable(id: SetupLaunchAgentCancellableId(), cancelInFlight: true)
 
             case .setupLaunchAgentClicked:
                 if Self.bundleIsInApplicationsFolder {

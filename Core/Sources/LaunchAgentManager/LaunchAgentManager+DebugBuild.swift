@@ -1,14 +1,46 @@
-#if DEBUG
 import Foundation
+#if DEBUG
 import os
+#endif
 
+public enum DebugLaunchAgentPlist {
+    public static func xmlData(
+        serviceIdentifier: String,
+        programPath: String,
+        bundleIdentifier: String
+    ) throws -> Data {
+        let plist: [String: Any] = [
+            "Label": serviceIdentifier,
+            "Program": programPath,
+            "MachServices": [serviceIdentifier: true],
+            "AssociatedBundleIdentifiers": [bundleIdentifier, serviceIdentifier],
+        ]
+        return try PropertyListSerialization.data(
+            fromPropertyList: plist,
+            format: .xml,
+            options: 0
+        )
+    }
+
+    public static func propertyListsEqual(_ lhs: Data, _ rhs: Data) -> Bool {
+        func object(_ data: Data) -> NSObject? {
+            (try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)) as? NSObject
+        }
+        guard let left = object(lhs), let right = object(rhs) else { return false }
+        return left == right
+    }
+}
+
+#if DEBUG
 /// Debug builds run straight from DerivedData, so the release flow (`SMAppService` with the
 /// plist bundled for /Applications) can't be used. Upstream expects developers to run every
 /// target from Xcode by hand; this fork instead registers the bridge automatically so a plain
 /// "Run" of the host app brings the whole service chain up.
 extension LaunchAgentManager {
+    static var didRunInThisProcess = false
+
     private static let logger = os.Logger(
-        subsystem: "com.intii.CopilotForXcode",
+        subsystem: Bundle.main.bundleIdentifier ?? "com.intii.CopilotForXcode",
         category: "LaunchAgentManager"
     )
 
@@ -21,9 +53,32 @@ extension LaunchAgentManager {
     /// 2. bootstraps it into the user's launchd domain when it isn't loaded;
     /// 3. restarts the bridge when its binary was rebuilt since the last restart, so the freshly
     ///    built code is the one serving XPC requests.
+    /// Automatic `.appear` path: register at most once per host process.
+    public func setupLaunchAgentForDebugBuildIfNeeded() async throws {
+        if Self.didRunInThisProcess { return }
+        Self.didRunInThisProcess = true
+        do {
+            try await setupLaunchAgentForDebugBuild()
+        } catch {
+            Self.didRunInThisProcess = false
+            throw error
+        }
+    }
+
+    /// Explicit Setup button: always re-register.
     public func setupLaunchAgentForDebugBuild() async throws {
-        let plist = debugPlistContent
-        let existing = try? String(contentsOfFile: launchAgentPath, encoding: .utf8)
+        try await registerDebugLaunchAgentIfNeeded()
+        Self.didRunInThisProcess = true
+    }
+
+    private func registerDebugLaunchAgentIfNeeded() async throws {
+        let plist = try DebugLaunchAgentPlist.xmlData(
+            serviceIdentifier: serviceIdentifier,
+            programPath: executableURL.path,
+            bundleIdentifier: bundleIdentifier
+        )
+        let existing = try? Data(contentsOf: URL(fileURLWithPath: launchAgentPath))
+        let plistChanged = existing.map { !DebugLaunchAgentPlist.propertyListsEqual($0, plist) } ?? true
         let isLoaded = await isDebugLaunchAgentLoaded()
         let bridgeModificationDate = try? FileManager.default
             .attributesOfItem(atPath: executableURL.path)[.modificationDate] as? Date
@@ -31,7 +86,7 @@ extension LaunchAgentManager {
         let lastBridgeModificationDate = defaults
             .object(forKey: Self.bridgeModificationDateKey) as? Date
 
-        if existing != plist {
+        if plistChanged {
             if isLoaded {
                 try await debugLaunchctl("bootout", serviceTarget)
                 await waitUntilDebugLaunchAgentUnloaded()
@@ -57,39 +112,12 @@ private extension LaunchAgentManager {
     var domainTarget: String { "gui/\(getuid())" }
     var serviceTarget: String { "\(domainTarget)/\(serviceIdentifier)" }
 
-    /// Same template as `setupLaunchAgentWithDynamicPlist`, kept here so the release code path
-    /// stays byte-for-byte upstream.
-    var debugPlistContent: String {
-        """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>Label</key>
-            <string>\(serviceIdentifier)</string>
-            <key>Program</key>
-            <string>\(executableURL.path)</string>
-            <key>MachServices</key>
-            <dict>
-                <key>\(serviceIdentifier)</key>
-                <true/>
-            </dict>
-            <key>AssociatedBundleIdentifiers</key>
-            <array>
-                <string>\(bundleIdentifier)</string>
-                <string>\(serviceIdentifier)</string>
-            </array>
-        </dict>
-        </plist>
-        """
-    }
-
-    func writeDebugPlist(_ content: String) throws {
+    func writeDebugPlist(_ data: Data) throws {
         try FileManager.default.createDirectory(
             at: launchAgentDirURL,
             withIntermediateDirectories: true
         )
-        try content.write(toFile: launchAgentPath, atomically: true, encoding: .utf8)
+        try data.write(to: URL(fileURLWithPath: launchAgentPath), options: .atomic)
     }
 
     func isDebugLaunchAgentLoaded() async -> Bool {
@@ -145,7 +173,7 @@ private struct DebugLaunchAgentError: Error, LocalizedError {
     var errorDescription: String? {
         var message = "\(command) failed (\(status))"
         if !output.isEmpty { message += ": \(output)" }
-        if output.contains("Input/output error") || status == 5 {
+        if output.contains("Input/output error") || output.contains("disabled") {
             message += ". If the login item was disabled, enable it in System Settings › General › Login Items & Extensions."
         }
         return message

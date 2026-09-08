@@ -35,6 +35,7 @@
 		C8738B6B2BE4D56F00609E7F /* ServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8738B6A2BE4D56F00609E7F /* ServiceDelegate.swift */; };
 		C8738B6F2BE4F7A600609E7F /* XPCShared in Frameworks */ = {isa = PBXBuildFile; productRef = C8738B6E2BE4F7A600609E7F /* XPCShared */; };
 		C8738B712BE4F8B700609E7F /* XPCController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8738B702BE4F8B700609E7F /* XPCController.swift */; };
+		C8F4D1026F0AF0FD00A4C002 /* ExecutableFingerprint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F4D1016F0AF0FD00A4C001 /* ExecutableFingerprint.swift */; };
 		C8738B7B2BE5363800609E7F /* SandboxedClientTesterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8738B7A2BE5363800609E7F /* SandboxedClientTesterApp.swift */; };
 		C8738B7D2BE5363800609E7F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8738B7C2BE5363800609E7F /* ContentView.swift */; };
 		C8738B7F2BE5363900609E7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8738B7E2BE5363900609E7F /* Assets.xcassets */; };
@@ -219,6 +220,7 @@
 		C8738B6A2BE4D56F00609E7F /* ServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDelegate.swift; sourceTree = "<group>"; };
 		C8738B6D2BE4F3E800609E7F /* bridgeLaunchAgent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = bridgeLaunchAgent.plist; sourceTree = "<group>"; };
 		C8738B702BE4F8B700609E7F /* XPCController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCController.swift; sourceTree = "<group>"; };
+		C8F4D1016F0AF0FD00A4C001 /* ExecutableFingerprint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExecutableFingerprint.swift; sourceTree = "<group>"; };
 		C8738B782BE5363800609E7F /* SandboxedClientTester.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SandboxedClientTester.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8738B7A2BE5363800609E7F /* SandboxedClientTesterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxedClientTesterApp.swift; sourceTree = "<group>"; };
 		C8738B7C2BE5363800609E7F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -408,6 +410,7 @@
 				C861E6102994F6070056CB02 /* AppDelegate.swift */,
 				C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */,
 				C8738B702BE4F8B700609E7F /* XPCController.swift */,
+				C8F4D1016F0AF0FD00A4C001 /* ExecutableFingerprint.swift */,
 				C81291D52994FE6900196E12 /* Main.storyboard */,
 				C861E6142994F6080056CB02 /* Assets.xcassets */,
 				C861E6192994F6080056CB02 /* ExtensionService.entitlements */,
@@ -719,6 +722,7 @@
 			files = (
 				C89E75C32A46FB32000DD64F /* AppDelegate+Menu.swift in Sources */,
 				C8738B712BE4F8B700609E7F /* XPCController.swift in Sources */,
+				C8F4D1026F0AF0FD00A4C002 /* ExecutableFingerprint.swift in Sources */,
 				C861E6202994F63A0056CB02 /* ServiceDelegate.swift in Sources */,
 				C861E6112994F6070056CB02 /* AppDelegate.swift in Sources */,
 			);

@@ -23,6 +23,9 @@ public struct LaunchAgentManager {
     }
 
     public func setupLaunchAgentForTheFirstTimeIfNeeded() async throws {
+        #if DEBUG
+        try await setupLaunchAgentForDebugBuildIfNeeded()
+        #else
         if #available(macOS 13, *) {
             try await setupLaunchAgent()
         } else {
@@ -33,6 +36,7 @@ public struct LaunchAgentManager {
             guard !FileManager.default.fileExists(atPath: launchAgentPath) else { return }
             try await setupLaunchAgent()
         }
+        #endif
     }
 
     public func setupLaunchAgent() async throws {
@@ -56,6 +60,9 @@ public struct LaunchAgentManager {
     }
 
     public func removeLaunchAgent() async throws {
+        #if DEBUG
+        Self.didRunInThisProcess = false
+        #endif
         if #available(macOS 13, *) {
             let bridgeLaunchAgent = SMAppService.agent(plistName: "bridgeLaunchAgent.plist")
             try? await bridgeLaunchAgent.unregister()

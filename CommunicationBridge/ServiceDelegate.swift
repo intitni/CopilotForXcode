@@ -12,7 +12,7 @@ class ServiceDelegate: NSObject, NSXPCListenerDelegate {
             with: CommunicationBridgeXPCServiceProtocol.self
         )
 
-        let exportedObject = XPCService()
+        let exportedObject = XPCService(processIdentifier: newConnection.processIdentifier)
         newConnection.exportedObject = exportedObject
         newConnection.resume()
 
@@ -24,6 +24,11 @@ class ServiceDelegate: NSObject, NSXPCListenerDelegate {
 
 class XPCService: CommunicationBridgeXPCServiceProtocol {
     static let eventHandler = EventHandler()
+    let processIdentifier: pid_t
+
+    init(processIdentifier: pid_t) {
+        self.processIdentifier = processIdentifier
+    }
 
     func launchExtensionServiceIfNeeded(
         withReply reply: @escaping (NSXPCListenerEndpoint?) -> Void
@@ -44,13 +49,18 @@ class XPCService: CommunicationBridgeXPCServiceProtocol {
         withReply reply: @escaping () -> Void
     ) {
         Task {
-            await Self.eventHandler.updateServiceEndpoint(endpoint: endpoint, withReply: reply)
+            await Self.eventHandler.updateServiceEndpoint(
+                endpoint: endpoint,
+                processIdentifier: processIdentifier,
+                withReply: reply
+            )
         }
     }
 }
 
 actor EventHandler {
     var endpoint: NSXPCListenerEndpoint?
+    var endpointPID: pid_t?
     let launcher = ExtensionServiceLauncher()
     var exitTask: Task<Void, Error>?
 
@@ -62,11 +72,24 @@ actor EventHandler {
         withReply reply: @escaping (NSXPCListenerEndpoint?) -> Void
     ) async {
         rescheduleExitTask()
+        if let endpoint,
+           let pid = endpointPID,
+           let running = NSRunningApplication(processIdentifier: pid),
+           !running.isTerminated
+        {
+            Logger.communicationBridge.info("Service app is still valid")
+            await launcher.attach(running)
+            reply(endpoint)
+            return
+        }
+        // Stale anonymous listener: do not keep a handle just because some other
+        // process with the same bundle id is still running.
+        endpoint = nil
+        endpointPID = nil
         if await launcher.isApplicationValid {
             Logger.communicationBridge.info("Service app is still valid")
-            reply(endpoint)
+            reply(nil)
         } else {
-            endpoint = nil
             await launcher.launch()
             reply(nil)
         }
@@ -78,9 +101,14 @@ actor EventHandler {
         exit(0)
     }
 
-    func updateServiceEndpoint(endpoint: NSXPCListenerEndpoint, withReply reply: () -> Void) {
+    func updateServiceEndpoint(
+        endpoint: NSXPCListenerEndpoint,
+        processIdentifier: pid_t,
+        withReply reply: () -> Void
+    ) {
         rescheduleExitTask()
         self.endpoint = endpoint
+        endpointPID = processIdentifier
         reply()
     }
 
@@ -124,7 +152,16 @@ actor ExtensionServiceLauncher {
         return false
     }
 
+    func attach(_ application: NSRunningApplication) {
+        self.application = application
+    }
+
     func launch() {
+        if let running = runningApplicationMatchingAppURL() {
+            application = running
+            return
+        }
+
         guard !isLaunching else { return }
         isLaunching = true
 
@@ -154,5 +191,16 @@ actor ExtensionServiceLauncher {
             self.isLaunching = false
         }
     }
-}
 
+    /// Prefer the instance launched from this package; other installs with the same
+    /// bundle id fall through to `openApplication(at: appURL)`.
+    private func runningApplicationMatchingAppURL() -> NSRunningApplication? {
+        let wanted = appURL.standardizedFileURL
+        return NSRunningApplication.runningApplications(withBundleIdentifier: appIdentifier)
+            .first { running in
+                guard !running.isTerminated else { return false }
+                guard let bundleURL = running.bundleURL else { return false }
+                return bundleURL.standardizedFileURL == wanted
+            }
+    }
+}

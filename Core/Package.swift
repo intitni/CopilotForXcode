@@ -248,6 +248,10 @@ let package = Package(
 
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
+        .testTarget(
+            name: "LaunchAgentManagerTests",
+            dependencies: ["LaunchAgentManager"]
+        ),
         .target(
             name: "UpdateChecker",
             dependencies: [

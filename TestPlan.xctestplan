@@ -52,6 +52,13 @@
     },
     {
       "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "LaunchAgentManagerTests",
+        "name" : "LaunchAgentManagerTests"
+      }
+    },
+    {
+      "target" : {
         "containerPath" : "container:Tool",
         "identifier" : "ASTParserTests",
         "name" : "ASTParserTests"

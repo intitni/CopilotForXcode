@@ -81,8 +81,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func setupQuitOnUpdate() {
         Task {
+            #if DEBUG
+            let fingerprint = ExecutableFingerprint.current()
+            #else
             guard let url = Bundle.main.executableURL else { return }
             let checker = await FileChangeChecker(fileURL: url)
+            #endif
 
             // If Xcode or Copilot for Xcode is made active, check if the executable of this program
             // is changed. If changed, quit this program.
@@ -95,7 +99,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                     app.isUserOfService
                 else { continue }
-                guard await checker.checkIfChanged() else {
+                #if DEBUG
+                let changed = ExecutableFingerprint.current() != fingerprint
+                #else
+                let changed = await checker.checkIfChanged()
+                #endif
+                guard changed else {
                     Logger.service.info("Extension Service is not updated, no need to quit.")
                     continue
                 }
