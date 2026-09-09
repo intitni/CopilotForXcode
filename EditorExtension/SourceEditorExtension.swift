@@ -52,6 +52,8 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
     }
 
     var commandDefinitions: [[XCSourceEditorCommandDefinitionKey: Any]] {
+        // Xcode can read this before `extensionDidFinishLaunching`, so pin the language here too.
+        AppLanguage.applyPreferredLanguage()
         return builtin + optional + custom + internalUse
     }
 
@@ -89,7 +91,8 @@ extension CommandType {
     func makeCommandDefinition() -> [XCSourceEditorCommandDefinitionKey: Any] {
         [.classNameKey: commandClassName,
          .identifierKey: identifierPrefix + identifier,
-         .nameKey: name]
+         // Command names show up in Xcode's Editor menu, so they follow the app's language.
+         .nameKey: NSLocalizedString(name, comment: "Xcode editor command name")]
     }
 }
 

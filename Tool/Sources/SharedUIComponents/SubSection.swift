@@ -44,7 +44,7 @@ public struct SubSection<Title: View, Description: View, Content: View>: View {
 }
 
 public extension SubSection where Description == Text {
-    init(title: Title, description: String, @ViewBuilder content: @escaping () -> Content) {
+    init(title: Title, description: LocalizedStringKey, @ViewBuilder content: @escaping () -> Content) {
         self.init(title: title, description: Text(description), content: content)
     }
 }
@@ -68,7 +68,7 @@ public extension SubSection where Title == EmptyView, Description == EmptyView {
 }
 
 public extension SubSection where Title == EmptyView, Description == Text {
-    init(description: String, @ViewBuilder content: @escaping () -> Content) {
+    init(description: LocalizedStringKey, @ViewBuilder content: @escaping () -> Content) {
         self.init(title: EmptyView(), description: description, content: content)
     }
 }

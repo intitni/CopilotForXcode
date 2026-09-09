@@ -30,13 +30,13 @@ public struct GitHubCopilotModelPicker: View {
         }
     }
 
-    let title: String
+    let title: LocalizedStringKey
     let hasDefaultModel: Bool
     @Binding var gitHubCopilotModelId: String
     @State var viewModel: ViewModel
 
     init(
-        title: String,
+        title: LocalizedStringKey,
         hasDefaultModel: Bool = true,
         gitHubCopilotModelId: Binding<String>
     ) {

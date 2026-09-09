@@ -52,8 +52,8 @@ struct FeatureSettingsView: View {
                 }
                 .sidebarItem(
                     tag: 4 + index,
-                    title: tab.title,
-                    subtitle: tab.description,
+                    title: LocalizedStringKey(tab.title),
+                    subtitle: LocalizedStringKey(tab.description),
                     image: tab.image
                 )
             }

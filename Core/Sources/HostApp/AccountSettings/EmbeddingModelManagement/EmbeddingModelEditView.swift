@@ -119,7 +119,7 @@ struct EmbeddingModelEditView: View {
 
     struct BaseURLTextField<V: View>: View {
         let store: StoreOf<EmbeddingModelEdit>
-        var title: String = "Base URL"
+        var title: LocalizedStringKey = "Base URL"
         let prompt: Text?
         @ViewBuilder var trailingContent: () -> V
 

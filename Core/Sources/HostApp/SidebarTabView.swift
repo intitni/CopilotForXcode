@@ -3,8 +3,8 @@ import SwiftUI
 private struct SidebarItem: Identifiable, Equatable {
     var id: Int { tag }
     var tag: Int
-    var title: String
-    var subtitle: String? = nil
+    var title: LocalizedStringKey
+    var subtitle: LocalizedStringKey? = nil
     var image: String? = nil
 }
 
@@ -29,8 +29,8 @@ private extension EnvironmentValues {
 private struct SidebarTabViewWrapper<Content: View>: View {
     @Environment(\.sidebarTabTag) var sidebarTabTag
     var tag: Int
-    var title: String
-    var subtitle: String? = nil
+    var title: LocalizedStringKey
+    var subtitle: LocalizedStringKey? = nil
     var image: String? = nil
     var content: () -> Content
 
@@ -52,8 +52,8 @@ private struct SidebarTabViewWrapper<Content: View>: View {
 extension View {
     func sidebarItem(
         tag: Int,
-        title: String,
-        subtitle: String? = nil,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey? = nil,
         image: String? = nil
     ) -> some View {
         SidebarTabViewWrapper(

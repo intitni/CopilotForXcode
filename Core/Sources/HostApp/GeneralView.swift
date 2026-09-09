@@ -5,6 +5,7 @@ import LaunchAgentManager
 import Preferences
 import SharedUIComponents
 import SwiftUI
+import Toast
 
 struct GeneralView: View {
     let store: StoreOf<General>
@@ -101,12 +102,14 @@ struct ExtensionServiceView: View {
     var body: some View {
         WithPerceptionTracking {
             VStack(alignment: .leading) {
-                Text("Extension Service Version: \(store.xpcServiceVersion ?? "Loading..")")
+                Text("Extension Service Version: \(store.xpcServiceVersion ?? String(localized: "Loading.."))")
 
                 let grantedStatus: String = {
                     guard let granted = store.isAccessibilityPermissionGranted
-                    else { return "Loading.." }
-                    return granted ? "Granted" : "Not Granted"
+                    else { return String(localized: "Loading..") }
+                    return granted
+                        ? String(localized: "Granted")
+                        : String(localized: "Not Granted")
                 }()
                 Text("Accessibility Permission: \(grantedStatus)")
 
@@ -200,14 +203,33 @@ struct GeneralSettingsView: View {
         var showHideWidgetShortcutGlobally
         @AppStorage(\.installBetaBuilds)
         var installBetaBuilds
+        @AppStorage(\.appLanguage)
+        var appLanguage
     }
 
     @StateObject var settings = Settings()
     @Environment(\.updateChecker) var updateChecker
+    @Environment(\.toast) var toast
     @State var automaticallyCheckForUpdate: Bool?
 
     var body: some View {
         Form {
+            Picker(selection: $settings.appLanguage) {
+                ForEach(AppLanguage.allCases, id: \.rawValue) { language in
+                    Text(language.displayName).tag(language.rawValue)
+                }
+            } label: {
+                Text("Language")
+            }
+            .onChange(of: settings.appLanguage) { _ in
+                // The running processes keep the localization they resolved at launch.
+                AppLanguage.applyPreferredLanguage()
+                toast(
+                    String(localized: "Restart the app and the extension service to switch language."),
+                    .info
+                )
+            }
+
             Toggle(isOn: $settings.quitXPCServiceOnXcodeAndAppQuit) {
                 Text("Quit service when Xcode and host app are terminated")
             }

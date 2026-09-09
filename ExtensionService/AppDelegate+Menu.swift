@@ -44,31 +44,31 @@ extension AppDelegate {
         )
 
         let checkForUpdate = NSMenuItem(
-            title: "Check for Updates",
+            title: NSLocalizedString("Check for Updates", comment: ""),
             action: #selector(checkForUpdate),
             keyEquivalent: ""
         )
 
         let openExtensionManager = NSMenuItem(
-            title: "Open Extension Manager",
+            title: NSLocalizedString("Open Extension Manager", comment: ""),
             action: #selector(openExtensionManager),
             keyEquivalent: ""
         )
 
         let openCopilotForXcode = NSMenuItem(
-            title: "Open \(hostAppName)",
+            title: String(format: NSLocalizedString("Open %@", comment: ""), hostAppName),
             action: #selector(openCopilotForXcode),
             keyEquivalent: ""
         )
 
         let openGlobalChat = NSMenuItem(
-            title: "Open Chat",
+            title: NSLocalizedString("Open Chat", comment: ""),
             action: #selector(openGlobalChat),
             keyEquivalent: ""
         )
 
         let xcodeInspectorDebug = NSMenuItem(
-            title: "Xcode Inspector Debug",
+            title: NSLocalizedString("Xcode Inspector Debug", comment: ""),
             action: nil,
             keyEquivalent: ""
         )
@@ -79,27 +79,27 @@ extension AppDelegate {
         xcodeInspectorDebug.isHidden = false
 
         let accessibilityAPIPermission = NSMenuItem(
-            title: "Accessibility API Permission: N/A",
+            title: NSLocalizedString("Accessibility API Permission: N/A", comment: ""),
             action: nil,
             keyEquivalent: ""
         )
         accessibilityAPIPermission.identifier = accessibilityAPIPermissionMenuItemIdentifier
 
         let quitItem = NSMenuItem(
-            title: "Quit",
+            title: NSLocalizedString("Quit", comment: ""),
             action: #selector(quit),
             keyEquivalent: ""
         )
         quitItem.target = self
 
         let reactivateObservationsItem = NSMenuItem(
-            title: "Reactivate Observations to Xcode",
+            title: NSLocalizedString("Reactivate Observations to Xcode", comment: ""),
             action: #selector(reactivateObservationsToXcode),
             keyEquivalent: ""
         )
         
         let resetWorkspacesItem = NSMenuItem(
-            title: "Reset workspaces",
+            title: NSLocalizedString("Reset workspaces", comment: ""),
             action: #selector(destroyWorkspacePool),
             keyEquivalent: ""
         )
@@ -139,8 +139,13 @@ extension AppDelegate: NSMenuDelegate {
                 item.identifier == accessibilityAPIPermissionMenuItemIdentifier
             }) {
                 AXIsProcessTrusted()
-                accessibilityAPIPermission.title =
-                    "Accessibility API Permission: \(AXIsProcessTrusted() ? "Granted" : "Not Granted")"
+                accessibilityAPIPermission.title = String(
+                    format: NSLocalizedString("Accessibility API Permission: %@", comment: ""),
+                    NSLocalizedString(
+                        AXIsProcessTrusted() ? "Granted" : "Not Granted",
+                        comment: ""
+                    )
+                )
             }
 
         case xcodeInspectorDebugMenuIdentifier:
@@ -222,14 +227,14 @@ extension AppDelegate: NSMenuDelegate {
             menu.items.append(.separator())
 
             menu.items.append(NSMenuItem(
-                title: "Restart Xcode Inspector",
+                title: NSLocalizedString("Restart Xcode Inspector", comment: ""),
                 action: #selector(restartXcodeInspector),
                 keyEquivalent: ""
             ))
             
             let isDebuggingOverlay = UserDefaults.shared.value(for: \.debugOverlayPanel)
             let debugOverlayItem = NSMenuItem(
-                title: "Debug Window Overlays",
+                title: NSLocalizedString("Debug Window Overlays", comment: ""),
                 action: #selector(toggleDebugOverlayPanel),
                 keyEquivalent: ""
             )

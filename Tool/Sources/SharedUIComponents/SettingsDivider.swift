@@ -30,7 +30,7 @@ public struct SettingsDivider<Title: View>: View {
 }
 
 extension SettingsDivider where Title == Text {
-    public init(_ title: String) {
+    public init(_ title: LocalizedStringKey) {
         self.title = Text(title)
     }
 }

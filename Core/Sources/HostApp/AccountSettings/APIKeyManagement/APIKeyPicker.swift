@@ -3,7 +3,7 @@ import SwiftUI
 
 struct APIKeyPicker: View {
     @Perception.Bindable var store: StoreOf<APIKeySelection>
-    var title: String = "API Key"
+    var title: LocalizedStringKey = "API Key"
 
     var body: some View {
         WithPerceptionTracking {

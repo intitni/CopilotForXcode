@@ -2,7 +2,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct BaseURLPicker<TrailingContent: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let prompt: Text?
     @Perception.Bindable var store: StoreOf<BaseURLSelection>
     @ViewBuilder let trailingContent: () -> TrailingContent
@@ -45,7 +45,7 @@ struct BaseURLPicker<TrailingContent: View>: View {
 
 extension BaseURLPicker where TrailingContent == EmptyView {
     init(
-        title: String,
+        title: LocalizedStringKey,
         prompt: Text? = nil,
         store: StoreOf<BaseURLSelection>
     ) {

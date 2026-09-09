@@ -1,6 +1,15 @@
 #include "Version.xcconfig"
 SLASH = /
 
+// Apple Silicon only: no Intel slice is built, so no target can fall back to
+// ARCHS_STANDARD and quietly reintroduce x86_64.
+ARCHS = arm64
+
+// Belt and braces: Xcode re-materializes ARCHS = $(ARCHS_STANDARD) at target level whenever the
+// Architectures row is touched in the UI, which silently overrides the line above. EXCLUDED_ARCHS
+// is subtracted from whatever ARCHS ends up being, so the Intel slice stays out either way.
+EXCLUDED_ARCHS = x86_64
+
 HOST_APP_NAME = Copilot for Xcode
 BUNDLE_IDENTIFIER_BASE = com.intii.CopilotForXcode
 SPARKLE_FEED_URL = https:$(SLASH)$(SLASH)copilotforxcode.intii.com/appcast.xml

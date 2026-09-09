@@ -30,6 +30,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         shouldAutomaticallyCheckForUpdate: true
     )
 
+    func applicationWillFinishLaunching(_: Notification) {
+        AppLanguage.applyPreferredLanguage()
+    }
+
     func applicationDidFinishLaunching(_: Notification) {
 //        isPerceptionCheckingEnabled = false
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }

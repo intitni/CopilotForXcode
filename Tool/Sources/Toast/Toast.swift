@@ -99,7 +99,7 @@ public class ToastController: ObservableObject {
             // Find existing message with same content and type (and namespace)
             if let existingIndex = messages.firstIndex(where: {
                 $0.type == type &&
-                $0.content == Text(content) &&
+                $0.content == Text(LocalizedStringKey(content)) &&
                 $0.namespace == namespace
             }) {
                 let existingMessage = messages[existingIndex]
@@ -121,7 +121,7 @@ public class ToastController: ObservableObject {
                 id: id,
                 type: type,
                 namespace: namespace,
-                content: Text(content),
+                content: Text(LocalizedStringKey(content)),
                 buttons: buttons.map { b in
                     Message.MessageButton(label: b.label, action: { [weak self] in
                         b.action()

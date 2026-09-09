@@ -1,6 +1,7 @@
 import Client
 import HostApp
 import LaunchAgentManager
+import Preferences
 import SwiftUI
 import UpdateChecker
 import XPCShared
@@ -24,6 +25,10 @@ let updateCheckerDelegate = TheUpdateCheckerDelegate()
 
 @main
 struct CopilotForXcodeApp: App {
+    init() {
+        AppLanguage.applyPreferredLanguage()
+    }
+
     var body: some Scene {
         WindowGroup {
             TabContainer()

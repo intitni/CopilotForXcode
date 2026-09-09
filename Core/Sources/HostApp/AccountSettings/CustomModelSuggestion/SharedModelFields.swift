@@ -49,7 +49,7 @@ struct MaxTokensTextField: View {
 }
 
 struct BaseURLTextField<TrailingContent: View>: View {
-    var title: String = "Base URL"
+    var title: LocalizedStringKey = "Base URL"
     var prompt: Text?
     let store: StoreOf<BaseURLSelection>
     @ViewBuilder var trailingContent: () -> TrailingContent
@@ -66,7 +66,7 @@ struct BaseURLTextField<TrailingContent: View>: View {
 
 extension BaseURLTextField where TrailingContent == EmptyView {
     init(
-        title: String = "Base URL",
+        title: LocalizedStringKey = "Base URL",
         prompt: Text?,
         store: StoreOf<BaseURLSelection>
     ) {
@@ -76,7 +76,7 @@ extension BaseURLTextField where TrailingContent == EmptyView {
 
 struct ApiKeyNamePicker: View {
     let store: StoreOf<APIKeySelection>
-    var title: String = "API Key"
+    var title: LocalizedStringKey = "API Key"
 
     var body: some View {
         APIKeyPicker(store: store, title: title)

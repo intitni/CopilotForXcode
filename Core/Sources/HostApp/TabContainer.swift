@@ -65,7 +65,7 @@ public struct TabContainer: View {
                         let tab = externalTabContainer.tabs[index]
                         tab.viewBuilder().tabBarItem(
                             tag: 5 + index,
-                            title: tab.title,
+                            title: LocalizedStringKey(tab.title),
                             image: "plus.diamond"
                         )
                     }
@@ -116,7 +116,7 @@ struct TabBarButton: View {
     @Binding var currentTag: Int
     @State var isHovered = false
     var tag: Int
-    var title: String
+    var title: LocalizedStringKey
     var image: String
 
     var body: some View {
@@ -157,7 +157,7 @@ struct TabBarButton: View {
 private struct TabBarTabViewWrapper<Content: View>: View {
     @Environment(\.tabBarTabTag) var tabBarTabTag
     var tag: Int
-    var title: String
+    var title: LocalizedStringKey
     var image: String
     var content: () -> Content
 
@@ -179,7 +179,7 @@ private struct TabBarTabViewWrapper<Content: View>: View {
 private extension View {
     func tabBarItem(
         tag: Int,
-        title: String,
+        title: LocalizedStringKey,
         image: String
     ) -> some View {
         TabBarTabViewWrapper(
@@ -194,7 +194,7 @@ private extension View {
 private struct TabBarItem: Identifiable, Equatable {
     var id: Int { tag }
     var tag: Int
-    var title: String
+    var title: LocalizedStringKey
     var image: String
 }
 

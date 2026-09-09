@@ -105,6 +105,14 @@ public struct UserDefaultPreferenceKeys {
         defaultValue: false,
         key: "DebugOverlayPanel"
     )
+
+    // MARK: App Language
+
+    /// An empty value means "follow System Settings". See ``AppLanguage``.
+    public let appLanguage = PreferenceKey(
+        defaultValue: "",
+        key: "AppLanguage"
+    )
 }
 
 // MARK: - OpenAI Account Settings

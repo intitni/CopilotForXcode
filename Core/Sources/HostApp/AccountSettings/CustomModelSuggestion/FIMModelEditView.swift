@@ -85,7 +85,7 @@ struct FIMModelEditView: View {
     }
 
     func baseURLTextField<V: View>(
-        title: String = "Base URL",
+        title: LocalizedStringKey = "Base URL",
         prompt: Text?,
         @ViewBuilder trailingContent: @escaping () -> V
     ) -> some View {
@@ -101,7 +101,7 @@ struct FIMModelEditView: View {
     }
 
     func baseURLTextField(
-        title: String = "Base URL",
+        title: LocalizedStringKey = "Base URL",
         prompt: Text?
     ) -> some View {
         baseURLTextField(title: title, prompt: prompt, trailingContent: { EmptyView() })

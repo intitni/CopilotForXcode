@@ -13,6 +13,7 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 - Modification
 - Custom Commands to extend Chat and Modification.
 - Custom Model (built-in; OpenAI / OpenAI compatible / Responses API / Claude / Gemini / Ollama / Completion / FIM / Tabby)
+- Localized interface: English, 简体中文, 繁體中文. Pick one under General → Language, or leave it on "Follow System". The choice is shared by the host app, the extension service and the Xcode editor commands, and takes effect after a restart.
 
 ## Table of Contents
 
@@ -56,7 +57,8 @@ For more information, check the [Wiki Page](https://copilotforxcode.intii.com/wi
 
 ## Prerequisites
 
-- macOS 13.
+- A Mac with Apple Silicon. Intel Macs are not supported; the app ships an arm64-only binary.
+- macOS 15.6.
 - Public network connection.
 
 For suggestion features:
